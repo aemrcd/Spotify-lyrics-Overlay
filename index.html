@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Spotify Lyrics Overlay</title>
+
+<style>
+
+/* ==================================================
+   GOOGLE FONT — ROBOTO
+================================================== */
+
+@import url(
+    "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap"
+);
+
+
+/* ==================================================
+   GLOBAL
+================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+
+    margin: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: #000;
+
+    font-family:
+        "Roboto",
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: white;
+
+    -webkit-font-smoothing: antialiased;
+
+    -moz-osx-font-smoothing: grayscale;
+
+    text-rendering: optimizeLegibility;
+
+    cursor: none;
+}
+
+
+/* ==================================================
+   MAIN CONTAINER
+================================================== */
+
+#app {
+
+    position: fixed;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background: #000;
+}
+
+
+/* ==================================================
+   TITLE BLOCK
+================================================== */
+
+#titleWrap {
+
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 340px;
+
+    transform:
+        translateX(-50%);
+
+    width:
+        min(1000px, 90vw);
+
+    text-align: center;
+
+    opacity: 0;
+
+    transition:
+        opacity .7s ease;
+}
+
+#titleWrap.visible {
+
+    opacity: 1;
+}
+
+
+/* ==================================================
+   LYRICS BLOCK
+================================================== */
+
+#overlay {
+
+    position: fixed;
+
+    left: 50%;
+
+    bottom: 90px;
+
+    transform:
+        translateX(-50%);
+
+    width:
+        min(1000px, 90vw);
+
+    text-align: center;
+
+    opacity: 0;
+
+    transition:
+        opacity .7s ease;
+}
+
+#overlay.visible {
+
+    opacity: 1;
+}
+
+
+/* ==================================================
+   SONG INFORMATION
+================================================== */
+
+.song-info {
+
+    margin-bottom: 28px;
+
+    opacity: .9;
+}
+
+
+#title {
+
+    margin: 0;
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 34px;
+
+    line-height: 1.1;
+
+    font-weight: 700;
+
+    letter-spacing: -.5px;
+
+    color: white;
+
+    text-shadow:
+        0 2px 6px
+        rgba(0, 0, 0, .75);
+}
+
+
+#artist {
+
+    margin-top: 8px;
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 17px;
+
+    font-weight: 500;
+
+    color:
+        rgba(255, 255, 255, .75);
+
+    text-shadow:
+        0 2px 6px
+        rgba(0, 0, 0, .65);
+}
+
+
+/* ==================================================
+   SPOTIFY BADGE
+================================================== */
+
+.badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    margin-bottom: 16px;
+
+    padding:
+        7px 13px;
+
+    border-radius: 999px;
+
+    background:
+        rgba(0, 0, 0, .45);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, .12);
+
+    backdrop-filter:
+        blur(12px);
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 2px;
+
+    text-transform: uppercase;
+
+    color:
+        rgba(255, 255, 255, .65);
+}
+
+
+.dot {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+    background:
+        #1ed760;
+
+    box-shadow:
+        0 0 8px
+        rgba(30, 215, 96, .9),
+
+        0 0 18px
+        rgba(30, 215, 96, .5);
+
+    animation:
+        pulse 1.5s infinite;
+}
+
+
+/* ==================================================
+   LYRICS ROLLER
+================================================== */
+
+.roller-viewport {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 320px;
+
+    overflow: hidden;
+
+    -webkit-mask-image:
+        linear-gradient(
+            to bottom,
+
+            transparent 0%,
+
+            black 20%,
+
+            black 80%,
+
+            transparent 100%
+        );
+
+    mask-image:
+        linear-gradient(
+            to bottom,
+
+            transparent 0%,
+
+            black 20%,
+
+            black 80%,
+
+            transparent 100%
+        );
+}
+
+
+/*
+    THIS ELEMENT ONLY ROLLS UP/DOWN.
+
+    The wave animation NEVER gets applied
+    to this element.
+*/
+
+#lyrics {
+
+    position: absolute;
+
+    left: 0;
+
+    right: 0;
+
+    top: 0;
+
+    transition:
+        transform .65s
+        cubic-bezier(
+            .22,
+            1,
+            .36,
+            1
+        );
+}
+
+
+/* ==================================================
+   LYRIC LINE
+================================================== */
+
+.lyric-line {
+
+    height: 64px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding:
+        0 20px;
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 29px;
+
+    line-height: 1.25;
+
+    font-weight: 500;
+
+    color:
+        rgba(255, 255, 255, .35);
+
+    text-shadow:
+        0 2px 6px
+        rgba(0, 0, 0, .65);
+
+    /*
+        IMPORTANT:
+
+        The lyric line itself does NOT
+        animate during the wave.
+
+        This prevents the entire sentence
+        from scaling.
+    */
+
+    transform: none;
+}
+
+
+/* ==================================================
+   WAVE CHARACTER
+================================================== */
+
+/*
+    Every character is independent.
+
+    The characters stay in their original
+    position.
+
+    Only their SIZE changes.
+*/
+
+.lyric-line .wave-char {
+
+    display: inline-block;
+
+    position: relative;
+
+    /*
+        Scale from the center.
+
+        This makes the letter grow smoothly
+        without moving left/right.
+    */
+
+    transform-origin:
+        center center;
+
+    /*
+        Helps the browser render the
+        scaling smoothly.
+    */
+
+    will-change:
+        transform;
+
+    /*
+        Do NOT add transition here.
+
+        CSS animation controls the wave.
+    */
+
+    backface-visibility: hidden;
+
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* ==================================================
+   CURRENT LYRIC
+================================================== */
+
+.lyric-line.current {
+
+    opacity: 1;
+
+    /*
+        IMPORTANT:
+
+        No transform here.
+
+        Otherwise the parent line would
+        interfere with the character wave.
+    */
+
+    transform: none;
+
+    font-size: 30px;
+
+    font-weight: 700;
+
+    color: white;
+
+    -webkit-text-stroke: 0;
+
+    text-shadow:
+        0 2px 8px
+        rgba(0, 0, 0, .75);
+
+    background: none;
+
+    -webkit-text-fill-color: white;
+
+    /*
+        No lyricEnter animation here.
+
+        This is intentionally removed because
+        it can conflict with the wave.
+    */
+}
+
+
+/* ==================================================
+   CURRENT CHARACTER COLOR
+================================================== */
+
+.lyric-line.current .wave-char {
+
+    color: white;
+
+    -webkit-text-fill-color: white;
+}
+
+
+/* ==================================================
+   SMOOTH WAVE
+================================================== */
+
+/*
+    One character:
+
+        normal
+           ↓
+        gently grows
+           ↓
+        reaches maximum
+           ↓
+        gently shrinks
+           ↓
+        normal
+
+    Then the next character starts.
+
+    The animation itself DOES NOT move
+    the character horizontally or vertically.
+*/
+
+.lyric-line.current .wave-char.wave-active {
+
+    animation:
+        smoothLetterWave
+        0.42s
+        cubic-bezier(
+            .25,
+            .8,
+            .25,
+            1
+        );
+}
+
+
+/* ==================================================
+   SMOOTH LETTER SCALE
+================================================== */
+
+@keyframes smoothLetterWave {
+
+    /*
+        Normal size
+    */
+
+    0% {
+
+        transform:
+            scale(1);
+    }
+
+
+    /*
+        Starts growing
+    */
+
+    35% {
+
+        transform:
+            scale(1.35);
+    }
+
+
+    /*
+        Maximum size
+    */
+
+    50% {
+
+        transform:
+            scale(1.42);
+    }
+
+
+    /*
+        Back to normal
+    */
+
+    100% {
+
+        transform:
+            scale(1);
+    }
+}
+
+
+/* ==================================================
+   PREVIOUS — 2 LINES BACK
+================================================== */
+
+.lyric-line.prev-2 {
+
+    opacity: .12;
+
+    transform: none;
+
+    filter: none;
+}
+
+
+/* ==================================================
+   PREVIOUS — 1 LINE BACK
+================================================== */
+
+.lyric-line.prev-1 {
+
+    opacity: .35;
+
+    transform: none;
+
+    filter: none;
+}
+
+
+/* ==================================================
+   NEXT — 1 LINE
+================================================== */
+
+.lyric-line.next-1 {
+
+    opacity: .40;
+
+    transform: none;
+
+    filter: none;
+}
+
+
+/* ==================================================
+   NEXT — 2 LINES
+================================================== */
+
+.lyric-line.next-2 {
+
+    opacity: .16;
+
+    transform: none;
+
+    filter: none;
+}
+
+
+/* ==================================================
+   LYRICS NOT FOUND
+================================================== */
+
+#noLyrics {
+
+    display: none;
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 22px;
+
+    color:
+        rgba(255, 255, 255, .5);
+}
+
+
+/* ==================================================
+   LOADING
+================================================== */
+
+#loading {
+
+    display: none;
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 16px;
+
+    color:
+        rgba(255, 255, 255, .55);
+}
+
+
+/* ==================================================
+   STATUS
+================================================== */
+
+#status {
+
+    margin-top: 10px;
+
+    font-family:
+        "Roboto",
+        Arial,
+        sans-serif;
+
+    font-size: 9px;
+
+    letter-spacing: 2px;
+
+    text-transform: uppercase;
+
+    color:
+        rgba(255, 255, 255, .3);
+}
+
+
+/* ==================================================
+   ANIMATIONS
+================================================== */
+
+@keyframes pulse {
+
+    0% {
+
+        transform:
+            scale(1);
+
+        opacity: .7;
+    }
+
+    50% {
+
+        transform:
+            scale(1.35);
+
+        opacity: 1;
+    }
+
+    100% {
+
+        transform:
+            scale(1);
+
+        opacity: .7;
+    }
+}
+
+
+/* ==================================================
+   SONG CHANGE
+================================================== */
+
+@keyframes songChange {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            translateY(15px);
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform:
+            translateY(0);
+    }
+}
+
+
+.song-change {
+
+    animation:
+        songChange .7s
+        cubic-bezier(
+            .22,
+            1,
+            .36,
+            1
+        );
+}
+
+
+/* ==================================================
+   MOBILE
+================================================== */
+
+@media (max-width: 700px) {
+
+    #title {
+
+        font-size: 26px;
+    }
+
+
+    #artist {
+
+        font-size: 15px;
+    }
+
+
+    .lyric-line {
+
+        font-size: 22px;
+    }
+
+
+    .lyric-line.current {
+
+        font-size: 23px;
+    }
+
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div id="app">
+
+
+    <!-- ==================================================
+         TITLE
+    ================================================== -->
+
+    <div id="titleWrap">
+
+        <div class="badge">
+
+            <span class="dot"></span>
+
+            <span>
+                NOW PLAYING
+            </span>
+
+        </div>
+
+
+        <div class="song-info">
+
+            <h1 id="title">
+                Waiting for Spotify...
+            </h1>
+
+
+            <div id="artist">
+                Connect Spotify
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         LYRICS
+    ================================================== -->
+
+    <div id="overlay">
+
+        <div class="roller-viewport">
+
+            <div id="lyrics"></div>
+
+        </div>
+
+
+        <div id="loading">
+            Loading lyrics...
+        </div>
+
+
+        <div id="noLyrics">
+            Lyrics unavailable
+        </div>
+
+
+        <div id="status">
+            Waiting
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* ==================================================
+   STATE
+================================================== */
+
+let currentTrackId = null;
+
+let currentLyrics = [];
+
+let lineElements = [];
+
+let lastServerPosition = 0;
+
+let lastServerSyncTime = 0;
+
+let lastLyricIndex = undefined;
+
+let lyricsRequestTrack = null;
+
+
+/* ==================================================
+   SETTINGS
+================================================== */
+
+const ROW_HEIGHT = 64;
+
+
+/*
+    WAVE SETTINGS
+
+    420ms = smooth growth/shrink
+*/
+
+const WAVE_DURATION = 420;
+
+
+/*
+    Default letter-to-letter delay,
+    used as a fallback when a line's
+    own timing can't be calculated.
+
+    Lower = faster
+    Higher = slower
+*/
+
+const WAVE_DELAY = 70;
+
+
+/*
+    Pause before the wave repeats.
+*/
+
+const WAVE_PAUSE = 500;
+
+
+/*
+    Bounds for the PER-LINE wave delay.
+
+    Every line gets its own delay so the
+    sweep always finishes — every word
+    waves — before the line changes.
+*/
+
+const WAVE_DELAY_MIN = 25;
+
+const WAVE_DELAY_MAX = 100;
+
+
+/* ==================================================
+   ELEMENTS
+================================================== */
+
+const overlay =
+    document.getElementById(
+        "overlay"
+    );
+
+
+const titleWrap =
+    document.getElementById(
+        "titleWrap"
+    );
+
+
+const titleElement =
+    document.getElementById(
+        "title"
+    );
+
+
+const artistElement =
+    document.getElementById(
+        "artist"
+    );
+
+
+const lyricsElement =
+    document.getElementById(
+        "lyrics"
+    );
+
+
+const loadingElement =
+    document.getElementById(
+        "loading"
+    );
+
+
+const noLyricsElement =
+    document.getElementById(
+        "noLyrics"
+    );
+
+
+const statusElement =
+    document.getElementById(
+        "status"
+    );
+
+
+/* ==================================================
+   GET CURRENT SPOTIFY STATE
+================================================== */
+
+async function getSpotify() {
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/current?ts=" +
+                Date.now(),
+
+                {
+                    cache:
+                        "no-store"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            return null;
+
+        }
+
+
+        return await response.json();
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Spotify request failed:",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+/* ==================================================
+   GET LYRICS
+================================================== */
+
+async function getLyrics(
+    track
+) {
+
+    if (!track) {
+
+        return;
+
+    }
+
+
+    if (
+        lyricsRequestTrack ===
+        track.id
+    ) {
+
+        return;
+
+    }
+
+
+    lyricsRequestTrack =
+        track.id;
+
+
+    loadingElement.style.display =
+        "block";
+
+
+    noLyricsElement.style.display =
+        "none";
+
+
+    lyricsElement.innerHTML =
+        "";
+
+
+    lineElements =
+        [];
+
+
+    currentLyrics =
+        [];
+
+
+    try {
+
+        const params =
+            new URLSearchParams({
+
+                title:
+                    track.title,
+
+                artist:
+                    track.artist,
+
+                album:
+                    track.album || "",
+
+                duration:
+                    track.duration
+
+            });
+
+
+        const response =
+            await fetch(
+
+                "/api/lyrics?" +
+                params.toString(),
+
+                {
+                    cache:
+                        "no-store"
+                }
+
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Lyrics request failed"
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        loadingElement.style.display =
+            "none";
+
+
+        /*
+            Prefer synchronized lyrics.
+        */
+
+        if (
+            data.syncedLyrics
+        ) {
+
+            currentLyrics =
+                parseSyncedLyrics(
+                    data.syncedLyrics
+                );
+
+        }
+
+
+        /*
+            Fallback to normal lyrics.
+        */
+
+        if (
+            currentLyrics.length === 0 &&
+            data.lyrics
+        ) {
+
+            currentLyrics =
+                parsePlainLyrics(
+                    data.lyrics
+                );
+
+        }
+
+
+        if (
+            currentLyrics.length === 0
+        ) {
+
+            noLyricsElement.style.display =
+                "block";
+
+            statusElement.textContent =
+                "Lyrics unavailable";
+
+            return;
+
+        }
+
+
+        statusElement.textContent =
+            "Lyrics synchronized";
+
+
+        /*
+            Create every lyric row.
+        */
+
+        buildLyricRows();
+
+
+        lastLyricIndex =
+            undefined;
+
+
+        updateLyrics(
+            getEstimatedPosition()
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Lyrics error:",
+            error
+        );
+
+
+        loadingElement.style.display =
+            "none";
+
+
+        noLyricsElement.style.display =
+            "block";
+
+
+        statusElement.textContent =
+            "Lyrics unavailable";
+
+    }
+
+}
+
+
+/* ==================================================
+   PARSE SYNCED LYRICS
+================================================== */
+
+function parseSyncedLyrics(
+    text
+) {
+
+    const lines =
+        text.split(
+            /\r?\n/
+        );
+
+
+    const result = [];
+
+
+    for (
+        const line of lines
+    ) {
+
+        const match =
+            line.match(
+                /^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$/
+            );
+
+
+        if (!match) {
+
+            continue;
+
+        }
+
+
+        const minutes =
+            Number(
+                match[1]
+            );
+
+
+        const seconds =
+            Number(
+                match[2]
+            );
+
+
+        const timestamp =
+            (
+                minutes * 60 +
+                seconds
+            ) * 1000;
+
+
+        const lyric =
+            match[3].trim();
+
+
+        if (!lyric) {
+
+            continue;
+
+        }
+
+
+        result.push({
+
+            time:
+                timestamp,
+
+            text:
+                lyric
+
+        });
+
+    }
+
+
+    return result.sort(
+        (a, b) =>
+            a.time - b.time
+    );
+
+}
+
+
+/* ==================================================
+   PARSE NORMAL LYRICS
+================================================== */
+
+function parsePlainLyrics(
+    text
+) {
+
+    const lines =
+        text.split(
+            /\r?\n/
+        );
+
+
+    return lines
+
+        .map(
+            (line, index) => ({
+
+                time:
+                    index * 4000,
+
+                text:
+                    line.trim()
+
+            })
+        )
+
+        .filter(
+            line =>
+                line.text.length > 0
+        );
+
+}
+
+
+/* ==================================================
+   FIND CURRENT LYRIC
+================================================== */
+
+function getCurrentLyricIndex(
+    position
+) {
+
+    if (
+        currentLyrics.length === 0
+    ) {
+
+        return -1;
+
+    }
+
+
+    let currentIndex = -1;
+
+
+    for (
+        let i = 0;
+        i < currentLyrics.length;
+        i++
+    ) {
+
+        if (
+            position >=
+            currentLyrics[i].time
+        ) {
+
+            currentIndex =
+                i;
+
+        }
+
+        else {
+
+            break;
+
+        }
+
+    }
+
+
+    return currentIndex;
+
+}
+
+
+/* ==================================================
+   CLASSIFY LINE
+================================================== */
+
+function classifyLine(
+    index,
+    currentIndex
+) {
+
+    const diff =
+        index -
+        currentIndex;
+
+
+    if (
+        diff === 0
+    ) {
+
+        return "current";
+
+    }
+
+
+    if (
+        diff === -1
+    ) {
+
+        return "prev-1";
+
+    }
+
+
+    if (
+        diff <= -2
+    ) {
+
+        return "prev-2";
+
+    }
+
+
+    if (
+        diff === 1
+    ) {
+
+        return "next-1";
+
+    }
+
+
+    return "next-2";
+
+}
+
+
+/* ==================================================
+   BUILD LYRIC ROWS
+================================================== */
+
+function buildLyricRows() {
+
+    lyricsElement.innerHTML =
+        "";
+
+
+    lineElements =
+        currentLyrics.map(
+            line => {
+
+                const element =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                element.className =
+                    "lyric-line";
+
+
+                /*
+                    Split sentence into
+                    individual characters.
+                */
+
+                [
+                    ...line.text
+                ].forEach(
+                    (
+                        char
+                    ) => {
+
+                        const span =
+                            document.createElement(
+                                "span"
+                            );
+
+
+                        span.className =
+                            "wave-char";
+
+
+                        /*
+                            Preserve spaces.
+                        */
+
+                        span.textContent =
+                            char === " "
+                                ? "\u00A0"
+                                : char;
+
+
+                        element.appendChild(
+                            span
+                        );
+
+                    }
+                );
+
+
+                lyricsElement.appendChild(
+                    element
+                );
+
+
+                return element;
+
+            }
+        );
+
+}
+
+
+/* ==================================================
+   WAVE
+================================================== */
+
+/*
+    This is completely separate from
+    the lyric roller.
+
+    The roller moves #lyrics.
+
+    The wave scales .wave-char.
+
+    They do NOT share transforms.
+*/
+
+let waveToken = 0;
+
+
+function sleep(
+    milliseconds
+) {
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                milliseconds
+            )
+    );
+
+}
+
+
+/* ==================================================
+   START CHARACTER WAVE
+================================================== */
+
+async function runCharacterWave(
+    lyricElement,
+    letterDelay,
+    token
+) {
+
+    /*
+        Fall back to the fixed delay
+        if none was calculated for
+        this line.
+    */
+
+    if (
+        !letterDelay
+    ) {
+
+        letterDelay =
+            WAVE_DELAY;
+
+    }
+
+    if (!lyricElement) {
+
+        return;
+
+    }
+
+
+    /*
+        If a newer line has already
+        started its own wave, this
+        (older) chain has no business
+        touching anything anymore.
+    */
+
+    if (
+        token !==
+        waveToken
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        Remove animation classes
+        from all characters.
+    */
+
+    const characters =
+        lyricElement.querySelectorAll(
+            ".wave-char"
+        );
+
+
+    characters.forEach(
+        character => {
+
+            character.classList.remove(
+                "wave-active"
+            );
+
+        }
+    );
+
+
+    /*
+        Small delay to make sure
+        the previous animation is gone.
+    */
+
+    await sleep(50);
+
+
+    if (
+        token !==
+        waveToken
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        LEFT → RIGHT
+    */
+
+    for (
+        let i = 0;
+        i < characters.length;
+        i++
+    ) {
+
+        if (
+            token !==
+            waveToken
+        ) {
+
+            return;
+
+        }
+
+
+        const character =
+            characters[i];
+
+
+        /*
+            Restart animation.
+        */
+
+        character.classList.remove(
+            "wave-active"
+        );
+
+
+        /*
+            Force browser reflow.
+
+            This makes the animation
+            restart reliably.
+        */
+
+        void character.offsetWidth;
+
+
+        /*
+            Activate this character.
+        */
+
+        character.classList.add(
+            "wave-active"
+        );
+
+
+        /*
+            Start next character
+            before this one completely
+            finishes.
+
+            This creates overlap and
+            makes the wave continuous.
+        */
+
+        await sleep(
+            letterDelay
+        );
+
+    }
+
+
+    /*
+        Allow final character to
+        finish its scaling.
+    */
+
+    await sleep(
+        WAVE_DURATION
+    );
+
+
+    if (
+        token !==
+        waveToken
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        Pause after reaching the end.
+    */
+
+    await sleep(
+        WAVE_PAUSE
+    );
+
+
+    if (
+        token !==
+        waveToken
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        Repeat the wave.
+    */
+
+    runCharacterWave(
+        lyricElement,
+        letterDelay,
+        token
+    );
+
+}
+
+
+/* ==================================================
+   LINE DURATION
+================================================== */
+
+/*
+    How long this line stays on screen
+    before the next one takes over.
+
+    Used to calculate a wave speed that
+    reaches every character in time.
+*/
+
+function getLineDuration(
+    index
+) {
+
+    const line =
+        currentLyrics[index];
+
+
+    const next =
+        currentLyrics[index + 1];
+
+
+    if (
+        !line ||
+        !next
+    ) {
+
+        return 3000;
+
+    }
+
+
+    const diff =
+        next.time -
+        line.time;
+
+
+    if (
+        diff <= 0
+    ) {
+
+        return 3000;
+
+    }
+
+
+    return Math.min(
+        Math.max(
+            diff,
+            800
+        ),
+        8000
+    );
+
+}
+
+
+/* ==================================================
+   WAVE DELAY FOR THIS LINE
+================================================== */
+
+function getWaveDelayForLine(
+    text,
+    duration
+) {
+
+    const charCount =
+        [...text].length ||
+        1;
+
+
+    /*
+        Leave room for the final
+        character's grow/shrink plus
+        a small buffer before the
+        line changes.
+    */
+
+    const available =
+        Math.max(
+            duration -
+            WAVE_DURATION -
+            200,
+
+            400
+        );
+
+
+    const delay =
+        available /
+        charCount;
+
+
+    return Math.min(
+        Math.max(
+            delay,
+            WAVE_DELAY_MIN
+        ),
+        WAVE_DELAY_MAX
+    );
+
+}
+
+
+/* ==================================================
+   RENDER LYRICS
+================================================== */
+
+function renderLyrics(
+    currentIndex
+) {
+
+    if (
+        lineElements.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        Apply visual states.
+    */
+
+    for (
+        let i = 0;
+        i < lineElements.length;
+        i++
+    ) {
+
+        const element =
+            lineElements[i];
+
+
+        const tier =
+            classifyLine(
+                i,
+                currentIndex
+            );
+
+
+        element.className =
+            "lyric-line " +
+            tier;
+
+    }
+
+
+    if (
+        currentIndex < 0
+    ) {
+
+        return;
+
+    }
+
+
+    /*
+        CENTER THE CURRENT LYRIC
+    */
+
+    const viewport =
+        lyricsElement.parentElement;
+
+
+    const viewportHeight =
+        viewport.clientHeight;
+
+
+    const centerOffset =
+        (
+            viewportHeight / 2
+        ) -
+        (
+            ROW_HEIGHT / 2
+        );
+
+
+    const trackOffset =
+        centerOffset -
+        (
+            currentIndex *
+            ROW_HEIGHT
+        );
+
+
+    /*
+        IMPORTANT:
+
+        ONLY #lyrics moves.
+
+        The individual characters
+        don't use this transform.
+    */
+
+    lyricsElement.style.transform =
+        "translate3d(0, " +
+        trackOffset +
+        "px, 0)";
+
+
+    /*
+        Start the wave AFTER the lyric
+        has been rendered as current.
+
+        The delay is calculated from
+        how long this line stays on
+        screen, so every character
+        gets a turn before the next
+        line takes over.
+    */
+
+    const currentElement =
+        lineElements[
+            currentIndex
+        ];
+
+
+    if (currentElement) {
+
+        const duration =
+            getLineDuration(
+                currentIndex
+            );
+
+
+        const letterDelay =
+            getWaveDelayForLine(
+                currentLyrics[currentIndex].text,
+                duration
+            );
+
+
+        waveToken++;
+
+
+        runCharacterWave(
+            currentElement,
+            letterDelay,
+            waveToken
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   UPDATE LYRICS
+================================================== */
+
+function updateLyrics(
+    position
+) {
+
+    if (
+        currentLyrics.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    const currentIndex =
+        getCurrentLyricIndex(
+            position
+        );
+
+
+    /*
+        Only re-render when the
+        lyric changes.
+
+        This is important because
+        we DON'T want to restart
+        the wave every frame.
+    */
+
+    if (
+        currentIndex !==
+        lastLyricIndex
+    ) {
+
+        lastLyricIndex =
+            currentIndex;
+
+
+        renderLyrics(
+            currentIndex
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   ESTIMATED POSITION
+================================================== */
+
+function getEstimatedPosition() {
+
+    if (
+        !lastServerSyncTime
+    ) {
+
+        return lastServerPosition;
+
+    }
+
+
+    const elapsed =
+        performance.now() -
+        lastServerSyncTime;
+
+
+    return (
+        lastServerPosition +
+        elapsed
+    );
+
+}
+
+
+/* ==================================================
+   UPDATE SPOTIFY
+================================================== */
+
+async function updateSpotify() {
+
+    const track =
+        await getSpotify();
+
+
+    if (!track) {
+
+        statusElement.textContent =
+            "Spotify connection error";
+
+        return;
+
+    }
+
+
+    /*
+        Synchronize position.
+    */
+
+    lastServerPosition =
+        Number(
+            track.position
+        ) || 0;
+
+
+    lastServerSyncTime =
+        performance.now();
+
+
+    /*
+        Spotify stopped.
+    */
+
+    if (
+        !track.playing &&
+        !track.id
+    ) {
+
+        overlay.classList.remove(
+            "visible"
+        );
+
+
+        titleWrap.classList.remove(
+            "visible"
+        );
+
+
+        statusElement.textContent =
+            "Spotify stopped";
+
+
+        return;
+
+    }
+
+
+    /*
+        Spotify paused.
+    */
+
+    if (
+        !track.playing
+    ) {
+
+        statusElement.textContent =
+            "Spotify paused";
+
+
+        updateLyrics(
+            lastServerPosition
+        );
+
+
+        return;
+
+    }
+
+
+    /*
+        Show overlay.
+    */
+
+    overlay.classList.add(
+        "visible"
+    );
+
+
+    titleWrap.classList.add(
+        "visible"
+    );
+
+
+    /*
+        NEW SONG
+    */
+
+    if (
+        currentTrackId !==
+        track.id
+    ) {
+
+        console.log(
+            "New Spotify track:",
+            track.title,
+            "-",
+            track.artist
+        );
+
+
+        /*
+            Stop previous wave.
+        */
+
+        waveToken++;
+
+
+        currentTrackId =
+            track.id;
+
+
+        lyricsRequestTrack =
+            null;
+
+
+        currentLyrics =
+            [];
+
+
+        lineElements =
+            [];
+
+
+        lastLyricIndex =
+            undefined;
+
+
+        lyricsElement.innerHTML =
+            "";
+
+
+        /*
+            Title animation.
+        */
+
+        titleElement.classList.remove(
+            "song-change"
+        );
+
+
+        void titleElement.offsetWidth;
+
+
+        titleElement.textContent =
+            track.title;
+
+
+        titleElement.classList.add(
+            "song-change"
+        );
+
+
+        /*
+            Artist.
+        */
+
+        artistElement.textContent =
+            track.artist;
+
+
+        /*
+            Loading.
+        */
+
+        loadingElement.style.display =
+            "block";
+
+
+        noLyricsElement.style.display =
+            "none";
+
+
+        /*
+            Load lyrics.
+        */
+
+        await getLyrics(
+            track
+        );
+
+    }
+
+
+    /*
+        Update lyric position.
+    */
+
+    updateLyrics(
+        getEstimatedPosition()
+    );
+
+
+    statusElement.textContent =
+        "Playing";
+
+}
+
+
+/* ==================================================
+   INITIAL LOAD
+================================================== */
+
+updateSpotify();
+
+
+/* ==================================================
+   SERVER SYNC
+================================================== */
+
+setInterval(
+    updateSpotify,
+    2000
+);
+
+
+/* ==================================================
+   SMOOTH POSITION UPDATE
+================================================== */
+
+function smoothUpdate() {
+
+    if (
+        currentTrackId &&
+        currentLyrics.length > 0
+    ) {
+
+        updateLyrics(
+            getEstimatedPosition()
+        );
+
+    }
+
+
+    requestAnimationFrame(
+        smoothUpdate
+    );
+
+}
+
+
+requestAnimationFrame(
+    smoothUpdate
+);
+
+</script>
+
+</body>
+
+</html>

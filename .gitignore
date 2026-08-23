@@ -1,0 +1,8 @@
+.env
+spotify-token.json
+spotify-token.backup.json
+node_modules/
+server.backup.js
+server.stage1.js
+index.backup.html
+cloudflared-windows-amd64.exe
