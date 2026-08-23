@@ -15,13 +15,12 @@ const app = express();
 ==================================================
 */
 
-const PORT = 3000;
-const HOST = "127.0.0.1";
+const PORT = Number(process.env.PORT) || 10000;
+const HOST = "0.0.0.0";
 
 const REDIRECT_URI =
     process.env.SPOTIFY_REDIRECT_URI ||
-    `http://${HOST}:${PORT}/callback`;
-
+    `http://127.0.0.1:${PORT}/callback`;
 
 /*
 ==================================================
