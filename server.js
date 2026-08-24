@@ -8,19 +8,22 @@ const path = require("path");
 
 const app = express();
 
-
 /*
 ==================================================
  SERVER CONFIG
 ==================================================
 */
 
-const PORT = Number(process.env.PORT) || 10000;
-const HOST = "0.0.0.0";
+const PORT =
+    Number(process.env.PORT) || 10000;
+
+const HOST =
+    "0.0.0.0";
 
 const REDIRECT_URI =
     process.env.SPOTIFY_REDIRECT_URI ||
     `http://127.0.0.1:${PORT}/callback`;
+
 
 /*
 ==================================================
@@ -42,7 +45,6 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
     );
 
     process.exit(1);
-
 }
 
 
@@ -71,13 +73,12 @@ let loginState = null;
 
 /*
 ==================================================
- SPOTIFY PLAYBACK STATE
+ PLAYBACK STATE
 ==================================================
 
-This object is our local source of truth.
+This is the server's local source of truth.
 
-The browser can read this state without
-contacting Spotify.
+The browser NEVER contacts Spotify directly.
 
 ==================================================
 */
@@ -102,23 +103,11 @@ const playbackState = {
     duration:
         0,
 
-    /*
-    Position received from Spotify.
-    */
-
     spotifyPosition:
         0,
 
-    /*
-    Time when spotifyPosition was received.
-    */
-
     syncedAt:
         0,
-
-    /*
-    Current playback state.
-    */
 
     isPlaying:
         false,
@@ -126,47 +115,35 @@ const playbackState = {
     spotifyUrl:
         "",
 
-    /*
-    Last successful Spotify synchronization.
-    */
-
     lastSpotifyCheck:
         0,
 
     /*
-    Transition for frontend.
+    ==============================================
+    UI TRANSITION
+    ==============================================
     */
 
     transition:
-        null,
+        "STOPPED",
 
     transitionUntil:
         0,
 
     /*
-    Number of successful Spotify checks.
+    ==============================================
+    SPOTIFY STATISTICS
+    ==============================================
     */
 
     spotifyRequests:
         0,
 
-    /*
-    Number of Spotify errors.
-    */
-
     spotifyErrors:
         0,
 
-    /*
-    Last HTTP status.
-    */
-
     lastSpotifyStatus:
         null,
-
-    /*
-    Last error message.
-    */
 
     lastSpotifyError:
         null
@@ -176,17 +153,17 @@ const playbackState = {
 
 /*
 ==================================================
- SPOTIFY POLLING CONFIG
+ SPOTIFY POLLING
 ==================================================
 */
 
 /*
 Playing:
 
-15 seconds between Spotify checks.
+Spotify is checked every 15 seconds.
 
-The local clock handles the seconds between
-Spotify requests.
+The local clock handles the milliseconds
+between requests.
 */
 
 const SPOTIFY_POLL_PLAYING =
@@ -196,7 +173,7 @@ const SPOTIFY_POLL_PLAYING =
 /*
 Paused:
 
-20 seconds because position is not moving.
+No need to check constantly.
 */
 
 const SPOTIFY_POLL_PAUSED =
@@ -204,9 +181,9 @@ const SPOTIFY_POLL_PAUSED =
 
 
 /*
-When something changes:
+After a state transition:
 
-Check again after 5 seconds.
+Temporarily check more frequently.
 */
 
 const SPOTIFY_POLL_TRANSITION =
@@ -214,9 +191,7 @@ const SPOTIFY_POLL_TRANSITION =
 
 
 /*
-After an error:
-
-Don't hammer Spotify.
+After an error.
 */
 
 const SPOTIFY_POLL_ERROR =
@@ -224,7 +199,7 @@ const SPOTIFY_POLL_ERROR =
 
 
 /*
-Initial check.
+Initial synchronization.
 */
 
 const SPOTIFY_POLL_INITIAL =
@@ -232,13 +207,16 @@ const SPOTIFY_POLL_INITIAL =
 
 
 /*
-Seek detection tolerance.
+==================================================
+ SEEK DETECTION
+==================================================
+*/
 
-2500ms = 2.5 seconds.
+/*
+Normal clock drift should not trigger
+fast-forward / rewind.
 
-Small differences are normal because the
-local clock and Spotify timestamps won't
-always be identical.
+2.5 seconds is enough to detect a real seek.
 */
 
 const SEEK_THRESHOLD =
@@ -246,11 +224,12 @@ const SEEK_THRESHOLD =
 
 
 /*
-Transition display duration.
+How long the frontend displays
+"HARMONIZING".
 */
 
 const TRANSITION_DURATION =
-    2000;
+    1800;
 
 
 let spotifyPollTimer =
@@ -265,7 +244,7 @@ let spotifyRetryAfter =
 
 /*
 ==================================================
- LOAD SPOTIFY TOKEN
+ LOAD TOKEN
 ==================================================
 */
 
@@ -278,7 +257,6 @@ function loadToken() {
     ) {
 
         return;
-
     }
 
 
@@ -304,12 +282,9 @@ function loadToken() {
             error.message
         );
 
-
         spotifyToken =
             null;
-
     }
-
 }
 
 
@@ -318,7 +293,7 @@ loadToken();
 
 /*
 ==================================================
- SAVE SPOTIFY TOKEN
+ SAVE TOKEN
 ==================================================
 */
 
@@ -347,7 +322,7 @@ function saveToken(
 
 /*
 ==================================================
- SERVE FRONTEND
+ FRONTEND
 ==================================================
 */
 
@@ -370,21 +345,15 @@ app.get(
 
         loginState =
             crypto
-                .randomBytes(
-                    32
-                )
-                .toString(
-                    "hex"
-                );
+                .randomBytes(32)
+                .toString("hex");
 
 
         const scope =
             [
                 "user-read-currently-playing",
                 "user-read-playback-state"
-            ].join(
-                " "
-            );
+            ].join(" ");
 
 
         const params =
@@ -446,7 +415,6 @@ app.get(
                     .send(
                         "Spotify did not return an authorization code."
                     );
-
             }
 
 
@@ -460,7 +428,6 @@ app.get(
                     .send(
                         "Invalid Spotify login state."
                     );
-
             }
 
 
@@ -469,9 +436,7 @@ app.get(
                     .from(
                         `${CLIENT_ID}:${CLIENT_SECRET}`
                     )
-                    .toString(
-                        "base64"
-                    );
+                    .toString("base64");
 
 
             const response =
@@ -612,16 +577,14 @@ h1 {
                 .send(
                     "Spotify authentication failed. Check PowerShell."
                 );
-
         }
-
     }
 );
 
 
 /*
 ==================================================
- REFRESH SPOTIFY ACCESS TOKEN
+ REFRESH ACCESS TOKEN
 ==================================================
 */
 
@@ -635,7 +598,6 @@ async function refreshAccessToken() {
         throw new Error(
             "Spotify login required."
         );
-
     }
 
 
@@ -644,9 +606,7 @@ async function refreshAccessToken() {
             .from(
                 `${CLIENT_ID}:${CLIENT_SECRET}`
             )
-            .toString(
-                "base64"
-            );
+            .toString("base64");
 
 
     const response =
@@ -707,13 +667,12 @@ async function refreshAccessToken() {
 
 
     return spotifyToken.access_token;
-
 }
 
 
 /*
 ==================================================
- GET VALID SPOTIFY ACCESS TOKEN
+ GET VALID TOKEN
 ==================================================
 */
 
@@ -724,7 +683,6 @@ async function getAccessToken() {
         throw new Error(
             "Spotify login required."
         );
-
     }
 
 
@@ -736,12 +694,10 @@ async function getAccessToken() {
     if (expiresSoon) {
 
         return await refreshAccessToken();
-
     }
 
 
     return spotifyToken.access_token;
-
 }
 
 
@@ -749,57 +705,23 @@ async function getAccessToken() {
 ==================================================
  LOCAL PLAYBACK CLOCK
 ==================================================
-
-Instead of asking Spotify every second:
-
-Spotify:
-
-01:00
-
-Node remembers:
-
-01:00
-
-One second later:
-
-01:01
-
-Two seconds later:
-
-01:02
-
-This avoids unnecessary Spotify API requests.
-
-==================================================
 */
 
 function getLocalPosition() {
-
-    /*
-    Paused or stopped.
-
-    Position stays frozen.
-    */
 
     if (
         !playbackState.isPlaying
     ) {
 
         return playbackState.spotifyPosition;
-
     }
 
-
-    /*
-    We haven't synchronized yet.
-    */
 
     if (
         !playbackState.syncedAt
     ) {
 
         return playbackState.spotifyPosition;
-
     }
 
 
@@ -813,29 +735,22 @@ function getLocalPosition() {
         elapsed;
 
 
-    /*
-    Don't exceed song duration.
-    */
-
     if (
         playbackState.duration > 0 &&
-        position >
-            playbackState.duration
+        position > playbackState.duration
     ) {
 
         return playbackState.duration;
-
     }
 
 
     return position;
-
 }
 
 
 /*
 ==================================================
- PLAYBACK TRANSITIONS
+ UI TRANSITION
 ==================================================
 */
 
@@ -850,40 +765,44 @@ function setTransition(
     playbackState.transitionUntil =
         Date.now() +
         TRANSITION_DURATION;
-
 }
 
 
 /*
 ==================================================
  FETCH SPOTIFY PLAYBACK
-==================================================*/
+==================================================
+*/
 
 async function fetchSpotifyPlayback() {
 
     /*
-    ==============================================
-    PREVENT OVERLAPPING REQUESTS
-    ==============================================
+    Prevent overlapping Spotify requests.
     */
 
-    if (spotifyRequestRunning) {
+    if (
+        spotifyRequestRunning
+    ) {
+
         return null;
     }
 
 
     /*
-    ==============================================
-    RESPECT SPOTIFY RETRY-AFTER
-    ==============================================
+    Respect Retry-After.
     */
 
-    if (Date.now() < spotifyRetryAfter) {
+    if (
+        Date.now() <
+        spotifyRetryAfter
+    ) {
+
         return null;
     }
 
 
-    spotifyRequestRunning = true;
+    spotifyRequestRunning =
+        true;
 
 
     try {
@@ -891,19 +810,6 @@ async function fetchSpotifyPlayback() {
         const token =
             await getAccessToken();
 
-
-        /*
-        ==========================================
-        SPOTIFY REQUEST
-        ==========================================
-
-        IMPORTANT:
-
-        This is the ONLY Spotify request
-        configuration object.
-
-        ==========================================
-        */
 
         const response =
             await axios.get(
@@ -936,12 +842,6 @@ async function fetchSpotifyPlayback() {
 
             );
 
-
-        /*
-        ==========================================
-        UPDATE MONITOR STATISTICS
-        ==========================================
-        */
 
         playbackState.lastSpotifyCheck =
             Date.now();
@@ -979,13 +879,11 @@ async function fetchSpotifyPlayback() {
 
 
             console.log(
-                `⚠ Spotify rate limited. ` +
-                `Waiting ${retryAfter}s`
+                `⚠ Spotify rate limited. Waiting ${retryAfter}s`
             );
 
 
             return null;
-
         }
 
 
@@ -1005,19 +903,13 @@ async function fetchSpotifyPlayback() {
                 "Spotify access token expired or invalid.";
 
 
-            console.error(
-                "❌ Spotify access token expired or invalid."
-            );
-
-
             return null;
-
         }
 
 
         /*
         ==========================================
-        OTHER HTTP ERRORS
+        OTHER ERRORS
         ==========================================
         */
 
@@ -1032,21 +924,13 @@ async function fetchSpotifyPlayback() {
                 `Spotify returned HTTP ${response.status}`;
 
 
-            console.error(
-                "Spotify API response:",
-                response.status,
-                response.data
-            );
-
-
             return null;
-
         }
 
 
         /*
         ==========================================
-        NOTHING CURRENTLY PLAYING
+        NOTHING PLAYING
         ==========================================
         */
 
@@ -1065,7 +949,6 @@ async function fetchSpotifyPlayback() {
                     null
 
             };
-
         }
 
 
@@ -1076,12 +959,6 @@ async function fetchSpotifyPlayback() {
         const item =
             data.item;
 
-
-        /*
-        ==========================================
-        ONLY HANDLE TRACKS
-        ==========================================
-        */
 
         if (
             item.type !== "track"
@@ -1096,15 +973,8 @@ async function fetchSpotifyPlayback() {
                     null
 
             };
-
         }
 
-
-        /*
-        ==========================================
-        RETURN NORMALIZED PLAYBACK DATA
-        ==========================================
-        */
 
         return {
 
@@ -1162,59 +1032,21 @@ async function fetchSpotifyPlayback() {
         playbackState.spotifyErrors++;
 
 
-        const status =
+        playbackState.lastSpotifyStatus =
             error.response?.status ||
             null;
 
 
-        const spotifyError =
-            error.response?.data ||
-            null;
-
-
-        playbackState.lastSpotifyStatus =
-            status;
-
-
         playbackState.lastSpotifyError =
-            spotifyError ||
+            error.response?.data ||
             error.message;
 
 
-        console.error("");
-
         console.error(
-            "===================================="
-        );
-
-        console.error(
-            "Spotify polling error"
-        );
-
-        console.error(
-            "===================================="
-        );
-
-        console.error(
-            "Status:",
-            status
-        );
-
-        console.error(
-            "Response:",
-            spotifyError
-        );
-
-        console.error(
-            "Message:",
+            "Spotify polling error:",
+            error.response?.data ||
             error.message
         );
-
-        console.error(
-            "===================================="
-        );
-
-        console.error("");
 
 
         return null;
@@ -1226,8 +1058,9 @@ async function fetchSpotifyPlayback() {
             false;
 
     }
-
 }
+
+
 /*
 ==================================================
  PROCESS SPOTIFY PLAYBACK
@@ -1240,7 +1073,7 @@ function processSpotifyPlayback(
 
     /*
     ==========================================
-    NOTHING PLAYING
+    STOPPED
     ==========================================
     */
 
@@ -1248,10 +1081,6 @@ function processSpotifyPlayback(
         !playback ||
         !playback.track
     ) {
-
-        /*
-        Don't repeatedly announce STOPPED.
-        */
 
         if (
             playbackState.status !==
@@ -1266,14 +1095,11 @@ function processSpotifyPlayback(
             playbackState.status =
                 "STOPPED";
 
-
             playbackState.isPlaying =
                 false;
 
-
             playbackState.spotifyPosition =
                 0;
-
 
             playbackState.syncedAt =
                 Date.now();
@@ -1282,12 +1108,10 @@ function processSpotifyPlayback(
             setTransition(
                 "STOPPED"
             );
-
         }
 
 
         return;
-
     }
 
 
@@ -1307,46 +1131,36 @@ function processSpotifyPlayback(
     ) {
 
         console.log(
-            `♪ Track changed: ` +
-            `${track.title} - ${track.artist}`
+            `♪ Track changed: ${track.title} - ${track.artist}`
         );
 
 
         playbackState.trackId =
             track.id;
 
-
         playbackState.title =
             track.title;
-
 
         playbackState.artist =
             track.artist;
 
-
         playbackState.album =
             track.album;
-
 
         playbackState.duration =
             track.duration;
 
-
         playbackState.spotifyUrl =
             track.spotifyUrl;
-
 
         playbackState.spotifyPosition =
             playback.position;
 
-
         playbackState.syncedAt =
             Date.now();
 
-
         playbackState.isPlaying =
             playback.playing;
-
 
         playbackState.status =
             playback.playing
@@ -1355,12 +1169,13 @@ function processSpotifyPlayback(
 
 
         setTransition(
-            "TRACK_CHANGED"
+            playback.playing
+                ? "TRACK_CHANGED"
+                : "PAUSED"
         );
 
 
         return;
-
     }
 
 
@@ -1376,21 +1191,18 @@ function processSpotifyPlayback(
     ) {
 
         console.log(
-            "❚❚ Spotify paused"
+            "⏸ Spotify paused"
         );
 
 
         playbackState.spotifyPosition =
             playback.position;
 
-
         playbackState.syncedAt =
             Date.now();
 
-
         playbackState.isPlaying =
             false;
-
 
         playbackState.status =
             "PAUSED";
@@ -1402,7 +1214,6 @@ function processSpotifyPlayback(
 
 
         return;
-
     }
 
 
@@ -1425,17 +1236,14 @@ function processSpotifyPlayback(
         playbackState.spotifyPosition =
             playback.position;
 
-
         playbackState.syncedAt =
             Date.now();
-
 
         playbackState.isPlaying =
             true;
 
-
         playbackState.status =
-            "PLAYING";
+            "RESUMED";
 
 
         setTransition(
@@ -1444,7 +1252,6 @@ function processSpotifyPlayback(
 
 
         return;
-
     }
 
 
@@ -1452,6 +1259,16 @@ function processSpotifyPlayback(
     ==========================================
     SEEK DETECTION
     ==========================================
+
+    Compare Spotify's new position against
+    where our local clock believes the song
+    should be.
+
+    Positive difference:
+        Spotify jumped forward.
+
+    Negative difference:
+        Spotify jumped backward.
     */
 
     const localPosition =
@@ -1463,40 +1280,64 @@ function processSpotifyPlayback(
 
 
     const difference =
-        Math.abs(
-            spotifyPosition -
-            localPosition
-        );
+        spotifyPosition -
+        localPosition;
 
 
     if (
-        difference >
+        Math.abs(difference) >
         SEEK_THRESHOLD
     ) {
 
+        const seekType =
+            difference > 0
+                ? "FAST_FORWARD"
+                : "REWIND";
+
+
         console.log(
-            `↪ Spotify seek detected ` +
-            `(difference: ${Math.round(
-                difference
-            )}ms)`
+            seekType === "FAST_FORWARD"
+                ? "⏩ Fast-forward detected"
+                : "⏪ Rewind detected"
         );
 
+
+        /*
+        Immediately synchronize the
+        server clock to Spotify.
+        */
 
         playbackState.spotifyPosition =
             spotifyPosition;
 
-
         playbackState.syncedAt =
             Date.now();
 
+        playbackState.isPlaying =
+            playback.playing;
+
+
+        /*
+        Keep PLAYING internally because
+        Spotify is still playing.
+
+        The frontend sees transition
+        FAST_FORWARD / REWIND and temporarily
+        hides lyrics.
+        */
+
+        playbackState.status =
+            playback.playing
+                ? "PLAYING"
+                : "PAUSED";
+
 
         setTransition(
-            "SEEKED"
+            seekType
         );
 
 
         return;
-
     }
 
 
@@ -1509,20 +1350,16 @@ function processSpotifyPlayback(
     playbackState.spotifyPosition =
         spotifyPosition;
 
-
     playbackState.syncedAt =
         Date.now();
 
-
     playbackState.isPlaying =
         playback.playing;
-
 
     playbackState.status =
         playback.playing
             ? "PLAYING"
             : "PAUSED";
-
 }
 
 
@@ -1546,32 +1383,10 @@ function scheduleSpotifyPoll(
             pollSpotify,
             delay
         );
-
 }
 
 
 async function pollSpotify() {
-
-    const playback =
-        await fetchSpotifyPlayback();
-
-
-    /*
-    Request failed.
-
-    Wait before trying again.
-    */
-
-    if (!playback) {
-
-        scheduleSpotifyPoll(
-            SPOTIFY_POLL_ERROR
-        );
-
-        return;
-
-    }
-
 
     const previousTrack =
         playbackState.trackId;
@@ -1581,15 +1396,27 @@ async function pollSpotify() {
         playbackState.isPlaying;
 
 
+    const playback =
+        await fetchSpotifyPlayback();
+
+
+    if (!playback) {
+
+        scheduleSpotifyPoll(
+            SPOTIFY_POLL_ERROR
+        );
+
+        return;
+    }
+
+
     processSpotifyPlayback(
         playback
     );
 
 
     /*
-    ==========================================
-    DETECT STATE CHANGE
-    ==========================================
+    A track or play state changed.
     */
 
     const changed =
@@ -1599,12 +1426,6 @@ async function pollSpotify() {
             playbackState.isPlaying;
 
 
-    /*
-    State changed.
-
-    Temporarily poll faster.
-    */
-
     if (
         changed
     ) {
@@ -1613,16 +1434,32 @@ async function pollSpotify() {
             SPOTIFY_POLL_TRANSITION
         );
 
-
         return;
-
     }
 
 
     /*
-    ==========================================
+    If we are currently showing
+    a transition, give the frontend
+    a little time to consume it.
+    */
+
+    if (
+        playbackState.transition &&
+        Date.now() <
+        playbackState.transitionUntil
+    ) {
+
+        scheduleSpotifyPoll(
+            SPOTIFY_POLL_TRANSITION
+        );
+
+        return;
+    }
+
+
+    /*
     PLAYING
-    ==========================================
     */
 
     if (
@@ -1633,22 +1470,17 @@ async function pollSpotify() {
             SPOTIFY_POLL_PLAYING
         );
 
-
         return;
-
     }
 
 
     /*
-    ==========================================
     PAUSED / STOPPED
-    ==========================================
     */
 
     scheduleSpotifyPoll(
         SPOTIFY_POLL_PAUSED
     );
-
 }
 
 
@@ -1659,10 +1491,9 @@ async function pollSpotify() {
 
 IMPORTANT:
 
-This endpoint DOES NOT call Spotify.
+This does NOT contact Spotify.
 
-The frontend can request this as often as
-necessary without consuming Spotify API calls.
+The frontend can request this frequently.
 
 ==================================================
 */
@@ -1678,7 +1509,7 @@ app.get(
         const transition =
             playbackState.transition &&
             Date.now() <
-                playbackState.transitionUntil
+            playbackState.transitionUntil
 
                 ? playbackState.transition
 
@@ -1722,81 +1553,27 @@ app.get(
                 playbackState.lastSpotifyCheck
 
         });
-
     }
 );
 
 
 /*
 ==================================================
- LRCLIB LYRIC CACHE
-==================================================
-
-The cache prevents repeated requests to LRCLIB
-for the same song.
-
-CACHE FLOW:
-
-Browser
-   │
-   ▼
-/api/lyrics
-   │
-   ├── Cache HIT
-   │      │
-   │      └──► Return lyrics immediately
-   │
-   └── Cache MISS
-          │
-          ▼
-        LRCLIB
-          │
-          ▼
-        Save cache
-          │
-          ▼
-        Return lyrics
-
+ LRCLIB CACHE
 ==================================================
 */
-
 
 const lyricsCache =
     new Map();
 
 
-/*
-==================================================
- LYRIC CACHE SETTINGS
-==================================================
-*/
-
-/*
-Lyrics don't normally change.
-
-Keep successful results for 24 hours.
-*/
-
 const LYRICS_CACHE_TTL =
     24 * 60 * 60 * 1000;
 
 
-/*
-Remember missing lyrics too.
-
-Otherwise the same song without lyrics could
-cause repeated LRCLIB requests.
-*/
-
 const LYRICS_NOT_FOUND_TTL =
     6 * 60 * 60 * 1000;
 
-
-/*
-==================================================
- CREATE LYRIC CACHE KEY
-==================================================
-*/
 
 function createLyricsCacheKey(
     trackId,
@@ -1806,29 +1583,11 @@ function createLyricsCacheKey(
     duration
 ) {
 
-    /*
-    Spotify track ID is the preferred key.
-
-    If we have it, use it.
-
-    This means:
-
-    Same Spotify song
-        =
-    Same cache entry
-    */
-
     if (trackId) {
 
         return `spotify:${trackId}`;
-
     }
 
-
-    /*
-    Fallback for requests that don't contain
-    a Spotify track ID.
-    */
 
     return [
 
@@ -1851,14 +1610,8 @@ function createLyricsCacheKey(
         )
 
     ].join("|");
-
 }
 
-/*
-==================================================
- GET CACHED LYRICS
-==================================================
-*/
 
 function getCachedLyrics(
     cacheKey
@@ -1870,20 +1623,11 @@ function getCachedLyrics(
         );
 
 
-    /*
-    Nothing cached.
-    */
-
     if (!cached) {
 
         return null;
-
     }
 
-
-    /*
-    Check expiration.
-    */
 
     if (
         Date.now() >
@@ -1895,20 +1639,12 @@ function getCachedLyrics(
         );
 
         return null;
-
     }
 
 
     return cached;
-
 }
 
-
-/*
-==================================================
- SAVE LYRICS TO CACHE
-==================================================
-*/
 
 function saveLyricsCache(
     cacheKey,
@@ -1940,13 +1676,12 @@ function saveLyricsCache(
         }
 
     );
-
 }
 
 
 /*
 ==================================================
- LRCLIB LYRICS API
+ LRCLIB
 ==================================================
 */
 
@@ -1954,17 +1689,19 @@ app.get(
     "/api/lyrics",
     async (req, res) => {
 
-	const trackId =
-    	    String(
-        	req.query.id ||
-        	""
-    	    ).trim();	
+        const trackId =
+            String(
+                req.query.id ||
+                ""
+            ).trim();
+
 
         const title =
             String(
                 req.query.title ||
                 ""
             ).trim();
+
 
         const artist =
             String(
@@ -1986,12 +1723,6 @@ app.get(
                 0
             );
 
-
-        /*
-        ==========================================
-        VALIDATION
-        ==========================================
-        */
 
         if (
             !title ||
@@ -2015,31 +1746,18 @@ app.get(
                         "Missing title or artist."
 
                 });
-
         }
 
 
-        /*
-        ==========================================
-        CREATE CACHE KEY
-        ==========================================
-        */
-
         const cacheKey =
             createLyricsCacheKey(
-		trackId,
+                trackId,
                 title,
                 artist,
                 album,
                 duration
             );
 
-
-        /*
-        ==========================================
-        CHECK CACHE
-        ==========================================
-        */
 
         const cached =
             getCachedLyrics(
@@ -2050,8 +1768,7 @@ app.get(
         if (cached) {
 
             console.log(
-                `✓ Lyrics cache hit: ` +
-                `${artist} - ${title}`
+                `✓ Lyrics cache hit: ${artist} - ${title}`
             );
 
 
@@ -2063,45 +1780,23 @@ app.get(
                     true
 
             });
-
         }
 
 
-        /*
-        ==========================================
-        CACHE MISS
-        ==========================================
-        */
-
         console.log(
-            `○ Lyrics cache miss: ` +
-            `${artist} - ${title}`
+            `○ Lyrics cache miss: ${artist} - ${title}`
         );
 
 
         try {
 
-            /*
-            ======================================
-            CONVERT DURATION
-            ======================================
-            */
-
             const durationSeconds =
                 duration > 0
-
                     ? Math.round(
                         duration / 1000
                     )
-
                     : undefined;
 
-
-            /*
-            ======================================
-            LRCLIB PARAMETERS
-            ======================================
-            */
 
             const params = {
 
@@ -2114,23 +1809,12 @@ app.get(
             };
 
 
-            /*
-            Album improves matching.
-            */
-
-            if (
-                album
-            ) {
+            if (album) {
 
                 params.album_name =
                     album;
-
             }
 
-
-            /*
-            Duration improves matching.
-            */
 
             if (
                 durationSeconds &&
@@ -2140,21 +1824,8 @@ app.get(
 
                 params.duration =
                     durationSeconds;
-
             }
 
-
-            console.log(
-                "→ Requesting LRCLIB:",
-                params
-            );
-
-
-            /*
-            ======================================
-            LRCLIB REQUEST
-            ======================================
-            */
 
             const response =
                 await axios.get(
@@ -2176,19 +1847,12 @@ app.get(
                             10000
 
                     }
-
                 );
 
 
             const data =
                 response.data;
 
-
-            /*
-            ======================================
-            NO LYRICS
-            ======================================
-            */
 
             if (
                 !data ||
@@ -2202,6 +1866,9 @@ app.get(
 
                     available:
                         false,
+
+                    id:
+                        trackId,
 
                     title:
                         title,
@@ -2221,21 +1888,10 @@ app.get(
                 };
 
 
-                /*
-                Cache the negative result.
-
-                This prevents repeatedly asking
-                LRCLIB for the same missing song.
-                */
-
                 saveLyricsCache(
-
                     cacheKey,
-
                     result,
-
                     false
-
                 );
 
 
@@ -2247,23 +1903,16 @@ app.get(
                         false
 
                 });
-
             }
 
-
-            /*
-            ======================================
-            NORMAL LYRICS RESULT
-            ======================================
-            */
 
             const result = {
 
                 available:
                     true,
 
-		id:
-        	    trackId,
+                id:
+                    trackId,
 
                 title:
                     data.trackName ||
@@ -2288,26 +1937,15 @@ app.get(
             };
 
 
-            /*
-            ======================================
-            SAVE SUCCESSFUL RESULT
-            ======================================
-            */
-
             saveLyricsCache(
-
                 cacheKey,
-
                 result,
-
                 true
-
             );
 
 
             console.log(
-                `✓ Lyrics cached: ` +
-                `${artist} - ${title}`
+                `✓ Lyrics cached: ${artist} - ${title}`
             );
 
 
@@ -2323,26 +1961,14 @@ app.get(
 
         } catch (error) {
 
-            /*
-            ======================================
-            NOT FOUND
-            ======================================
-            */
-
             if (
                 error.response?.status === 404
             ) {
 
-                console.log(
-                    `Lyrics not found: ` +
-                    `${artist} - ${title}`
-                );
-
-
                 const result = {
 
-		    id:
-		        trackId,
+                    id:
+                        trackId,
 
                     available:
                         false,
@@ -2368,18 +1994,10 @@ app.get(
                 };
 
 
-                /*
-                Cache the missing result.
-                */
-
                 saveLyricsCache(
-
                     cacheKey,
-
                     result,
-
                     false
-
                 );
 
 
@@ -2391,24 +2009,12 @@ app.get(
                         false
 
                 });
-
             }
 
-
-            /*
-            ======================================
-            LRCLIB RATE LIMIT
-            ======================================
-            */
 
             if (
                 error.response?.status === 429
             ) {
-
-                console.log(
-                    "⚠ LRCLIB rate limit reached."
-                );
-
 
                 return res
                     .status(429)
@@ -2416,12 +2022,6 @@ app.get(
 
                         available:
                             false,
-
-                        title:
-                            title,
-
-                        artist:
-                            artist,
 
                         lyrics:
                             null,
@@ -2433,15 +2033,8 @@ app.get(
                             "Lyrics service rate limited."
 
                     });
-
             }
 
-
-            /*
-            ======================================
-            OTHER ERROR
-            ======================================
-            */
 
             console.error(
                 "LRCLIB error:",
@@ -2458,12 +2051,6 @@ app.get(
                     available:
                         false,
 
-                    title:
-                        title,
-
-                    artist:
-                        artist,
-
                     lyrics:
                         null,
 
@@ -2474,11 +2061,10 @@ app.get(
                         "Unable to contact lyrics service."
 
                 });
-
         }
-
     }
 );
+
 
 /*
 ==================================================
@@ -2516,7 +2102,7 @@ app.listen(
         );
 
         console.log(
-            `Status:  http://${HOST}:${PORT}/api/status`
+            `Status:  http://${HOST}:${PORT}/api/current`
         );
 
         console.log("");
@@ -2538,7 +2124,6 @@ app.listen(
             console.log(
                 `Open http://${HOST}:${PORT}/login`
             );
-
         }
 
 
@@ -2547,17 +2132,10 @@ app.listen(
         );
 
 
-        /*
-        Start Spotify synchronization
-        one second after the server starts.
-        */
-
         scheduleSpotifyPoll(
             SPOTIFY_POLL_INITIAL
         );
 
-
         console.log("");
-
     }
 );
