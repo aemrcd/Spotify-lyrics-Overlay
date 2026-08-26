@@ -75,12 +75,6 @@ let loginState = null;
 ==================================================
  PLAYBACK STATE
 ==================================================
-
-This is the server's local source of truth.
-
-The browser NEVER contacts Spotify directly.
-
-==================================================
 */
 
 const playbackState = {
@@ -98,6 +92,9 @@ const playbackState = {
         null,
 
     album:
+        null,
+
+    albumArt:
         null,
 
     duration:
@@ -118,23 +115,11 @@ const playbackState = {
     lastSpotifyCheck:
         0,
 
-    /*
-    ==============================================
-    UI TRANSITION
-    ==============================================
-    */
-
     transition:
         "STOPPED",
 
     transitionUntil:
         0,
-
-    /*
-    ==============================================
-    SPOTIFY STATISTICS
-    ==============================================
-    */
 
     spotifyRequests:
         0,
@@ -157,50 +142,17 @@ const playbackState = {
 ==================================================
 */
 
-/*
-Playing:
-
-Spotify is checked every 15 seconds.
-
-The local clock handles the milliseconds
-between requests.
-*/
-
 const SPOTIFY_POLL_PLAYING =
     15000;
-
-
-/*
-Paused:
-
-No need to check constantly.
-*/
 
 const SPOTIFY_POLL_PAUSED =
     20000;
 
-
-/*
-After a state transition:
-
-Temporarily check more frequently.
-*/
-
 const SPOTIFY_POLL_TRANSITION =
     5000;
 
-
-/*
-After an error.
-*/
-
 const SPOTIFY_POLL_ERROR =
     15000;
-
-
-/*
-Initial synchronization.
-*/
 
 const SPOTIFY_POLL_INITIAL =
     1000;
@@ -212,21 +164,8 @@ const SPOTIFY_POLL_INITIAL =
 ==================================================
 */
 
-/*
-Normal clock drift should not trigger
-fast-forward / rewind.
-
-2.5 seconds is enough to detect a real seek.
-*/
-
 const SEEK_THRESHOLD =
     2500;
-
-
-/*
-How long the frontend displays
-"HARMONIZING".
-*/
 
 const TRANSITION_DURATION =
     1800;
@@ -776,10 +715,6 @@ function setTransition(
 
 async function fetchSpotifyPlayback() {
 
-    /*
-    Prevent overlapping Spotify requests.
-    */
-
     if (
         spotifyRequestRunning
     ) {
@@ -787,10 +722,6 @@ async function fetchSpotifyPlayback() {
         return null;
     }
 
-
-    /*
-    Respect Retry-After.
-    */
 
     if (
         Date.now() <
@@ -1013,6 +944,21 @@ async function fetchSpotifyPlayback() {
                     item.album?.name ||
                     "",
 
+                /*
+                ==================================
+                ALBUM ART
+                ==================================
+
+                Spotify normally returns the largest
+                artwork first.
+
+                This is sent directly to the frontend.
+                */
+
+                albumArt:
+                    item.album?.images?.[0]?.url ||
+                    "",
+
                 duration:
                     Number(
                         item.duration_ms
@@ -1147,6 +1093,9 @@ function processSpotifyPlayback(
         playbackState.album =
             track.album;
 
+        playbackState.albumArt =
+            track.albumArt;
+
         playbackState.duration =
             track.duration;
 
@@ -1259,16 +1208,6 @@ function processSpotifyPlayback(
     ==========================================
     SEEK DETECTION
     ==========================================
-
-    Compare Spotify's new position against
-    where our local clock believes the song
-    should be.
-
-    Positive difference:
-        Spotify jumped forward.
-
-    Negative difference:
-        Spotify jumped backward.
     */
 
     const localPosition =
@@ -1302,11 +1241,6 @@ function processSpotifyPlayback(
         );
 
 
-        /*
-        Immediately synchronize the
-        server clock to Spotify.
-        */
-
         playbackState.spotifyPosition =
             spotifyPosition;
 
@@ -1315,16 +1249,6 @@ function processSpotifyPlayback(
 
         playbackState.isPlaying =
             playback.playing;
-
-
-        /*
-        Keep PLAYING internally because
-        Spotify is still playing.
-
-        The frontend sees transition
-        FAST_FORWARD / REWIND and temporarily
-        hides lyrics.
-        */
 
         playbackState.status =
             playback.playing
@@ -1415,10 +1339,6 @@ async function pollSpotify() {
     );
 
 
-    /*
-    A track or play state changed.
-    */
-
     const changed =
         previousTrack !==
             playbackState.trackId ||
@@ -1438,12 +1358,6 @@ async function pollSpotify() {
     }
 
 
-    /*
-    If we are currently showing
-    a transition, give the frontend
-    a little time to consume it.
-    */
-
     if (
         playbackState.transition &&
         Date.now() <
@@ -1458,10 +1372,6 @@ async function pollSpotify() {
     }
 
 
-    /*
-    PLAYING
-    */
-
     if (
         playbackState.isPlaying
     ) {
@@ -1474,10 +1384,6 @@ async function pollSpotify() {
     }
 
 
-    /*
-    PAUSED / STOPPED
-    */
-
     scheduleSpotifyPoll(
         SPOTIFY_POLL_PAUSED
     );
@@ -1487,14 +1393,6 @@ async function pollSpotify() {
 /*
 ==================================================
  CURRENT PLAYBACK API
-==================================================
-
-IMPORTANT:
-
-This does NOT contact Spotify.
-
-The frontend can request this frequently.
-
 ==================================================
 */
 
@@ -1535,6 +1433,14 @@ app.get(
 
             album:
                 playbackState.album,
+
+            /*
+            Album artwork is now exposed
+            to the frontend.
+            */
+
+            albumArt:
+                playbackState.albumArt,
 
             position:
                 Math.round(

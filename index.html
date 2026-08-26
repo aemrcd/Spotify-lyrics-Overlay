@@ -12,16 +12,13 @@
 
 <title>Spotify Lyrics Overlay</title>
 
-
 <style>
 
 /* ==================================================
-   ROBOTO
+   FONTS
 ================================================== */
 
-@import url(
-    "https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap"
-);
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@700&family=Spline+Sans:wght@700&display=swap');
 
 
 /* ==================================================
@@ -32,21 +29,18 @@
     box-sizing: border-box;
 }
 
-
 html,
 body {
-
     margin: 0;
-
     width: 100%;
     height: 100%;
-
     overflow: hidden;
 
-    background: #000;
+    background:
+        #07080b;
 
     font-family:
-        "Roboto",
+        "Spline Sans",
         Arial,
         Helvetica,
         sans-serif;
@@ -54,7 +48,6 @@ body {
     color: white;
 
     -webkit-font-smoothing: antialiased;
-
     -moz-osx-font-smoothing: grayscale;
 
     text-rendering: optimizeLegibility;
@@ -62,49 +55,823 @@ body {
     cursor: none;
 }
 
+body {
+    transition:
+        background-color 1.2s ease;
+}
 
 #app {
-
     position: fixed;
-
     inset: 0;
+    overflow: hidden;
 
-    pointer-events: none;
+    background:
+        #07080b;
 
-    background: #000;
+    transition:
+        background 1.2s ease;
 }
 
 
 /* ==================================================
-   TITLE
+   AMBIENT BACKGROUND
 ================================================== */
 
-#titleWrap {
-
+.ambient {
     position: fixed;
+    inset: -25%;
 
-    left: 50%;
+    pointer-events: none;
+    z-index: 0;
 
-    bottom: 340px;
+    background:
+        radial-gradient(
+            circle at 25% 50%,
+            var(--ambient-color-soft),
+            transparent 35%
+        ),
+        radial-gradient(
+            circle at 75% 50%,
+            var(--ambient-color-faint),
+            transparent 40%
+        );
 
-    transform:
-        translateX(-50%);
+    filter:
+        blur(70px);
 
-    width:
-        min(1000px, 90vw);
-
-    text-align: center;
-
-    opacity: 0;
+    opacity: .75;
 
     transition:
-        opacity .7s ease;
+        background 1.4s ease,
+        opacity 1.2s ease;
+}
+
+.ambient::after {
+    content: "";
+
+    position: absolute;
+    inset: 20%;
+
+    border-radius: 50%;
+
+    background:
+        var(--ambient-color-center);
+
+    filter:
+        blur(90px);
+
+    opacity: .5;
 }
 
 
-#titleWrap.visible {
+/* ==================================================
+   MAIN SCENE
+================================================== */
 
+.scene {
+    position: relative;
+    z-index: 1;
+
+    width: 100%;
+    height: 100%;
+
+    display: grid;
+    place-items: center;
+
+    padding: 30px;
+}
+
+
+/* ==================================================
+   GLASS CONTAINER
+================================================== */
+
+.glass {
+    position: relative;
+
+    width:
+        min(1180px, 94vw);
+
+    min-height:
+        560px;
+
+    padding:
+        55px 70px;
+
+    border-radius:
+        42px;
+
+    /*
+     * The glass uses a very dark version
+     * of the album color.
+     */
+    background:
+        linear-gradient(
+            135deg,
+            var(--glass-color-primary),
+            var(--glass-color-secondary)
+        );
+
+    /*
+     * Base border receives a subtle album tint.
+     */
+    border:
+        1px solid
+        var(--glass-border-color);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+
+    box-shadow:
+        inset
+        0 1px
+        rgba(255, 255, 255, .055),
+
+        0 35px 100px
+        rgba(0, 0, 0, .45),
+
+        /*
+         * Very subtle album-colored outer glow.
+         */
+        0 0 45px
+        var(--glass-outer-glow);
+
+    overflow:
+        hidden;
+
+    transition:
+        background 1.4s ease,
+        border-color 1.4s ease,
+        box-shadow 1.4s ease;
+}
+
+
+/* ==================================================
+   GLASS AMBIENT COLOR
+================================================== */
+
+.glass::before {
+    content: "";
+
+    position: absolute;
+
+    width:
+        520px;
+
+    height:
+        520px;
+
+    left:
+        24%;
+
+    top:
+        50%;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+    border-radius:
+        50%;
+
+    background:
+        var(--ambient-color-glass);
+
+    filter:
+        blur(90px);
+
+    opacity:
+        .28;
+
+    pointer-events:
+        none;
+}
+
+
+/* ==================================================
+   GLASS BORDER TRACE
+================================================== */
+
+.glass::after {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 1;
+
+    border-radius:
+        inherit;
+
+    padding:
+        1px;
+
+    /*
+     * The trace uses the album color.
+     *
+     * Most of the border remains invisible.
+     * A small colored section travels around
+     * the entire glass.
+     *
+     * The white portion creates a clean
+     * highlight at the leading edge.
+     */
+    background:
+        conic-gradient(
+            from var(--trace-angle),
+
+            transparent 0deg 315deg,
+
+            var(--glass-trace-soft) 330deg,
+
+            var(--glass-trace-medium) 342deg,
+
+            var(--glass-trace-bright) 350deg,
+
+            rgba(255, 255, 255, .95) 356deg,
+
+            transparent 360deg
+        );
+
+    /*
+     * Keep only the border visible.
+     */
+    -webkit-mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+
+    -webkit-mask-composite:
+        xor;
+
+    mask:
+        linear-gradient(#000 0 0) content-box,
+        linear-gradient(#000 0 0);
+
+    mask-composite:
+        exclude;
+
+    /*
+     * Colored glow + small white highlight.
+     */
+    filter:
+        drop-shadow(
+            0 0 4px
+            var(--glass-trace-glow)
+        )
+        drop-shadow(
+            0 0 10px
+            var(--glass-trace-glow)
+        );
+
+    pointer-events:
+        none;
+
+    animation:
+        traceBorder
+        8s
+        linear
+        infinite;
+}
+
+
+/* ==================================================
+   TRACE ANGLE
+================================================== */
+
+@property --trace-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+@keyframes traceBorder {
+
+    to {
+        --trace-angle:
+            360deg;
+    }
+
+}
+
+
+/* ==================================================
+   GLASS TOP HIGHLIGHT
+================================================== */
+
+.highlight {
+    position: absolute;
+
+    top: 0;
+    left: 12%;
+
+    width: 76%;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,.12),
+            transparent
+        );
+}
+
+
+/* ==================================================
+   CONTENT
+================================================== */
+
+.content {
+    position: relative;
+    z-index: 2;
+
+    width: 100%;
+
+    min-height:
+        450px;
+
+    display: grid;
+
+    grid-template-columns:
+        310px
+        minmax(0, 1fr);
+
+    align-items: center;
+
+    column-gap:
+        55px;
+}
+
+
+/* ==================================================
+   VINYL SIDE
+================================================== */
+
+.vinyl-area {
+    
+    display: flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+    margin-left:
+        0;
+
+    perspective:
+        850px;
+
+    animation:
+        vinylFloat 6s ease-in-out infinite;
+}
+
+
+@keyframes vinylFloat {
+
+    0%,
+    100% {
+
+        transform:
+            translateY(0);
+    }
+
+    50% {
+
+        transform:
+            translateY(-8px);
+    }
+
+}
+
+
+/* ==================================================
+   VINYL
+================================================== */
+
+.record {
+    position: relative;
+
+    width:
+        clamp(
+            210px,
+        34vw,
+            480px
+        );
+    margin-left:
+        35%;
+
+    transform-style:
+        preserve-3d;
+
+    transform:
+        rotateX(18deg)
+        rotateY(-20deg)
+        rotateZ(-8deg);
+
+    aspect-ratio: 1;
+
+    flex:
+        0 0 auto;
+
+    border-radius:
+        50%;
+
+    background:
+        radial-gradient(
+            circle at 29% 22%,
+            rgba(255,255,255,.22),
+            transparent 16%
+        ),
+
+        radial-gradient(
+            circle at 70% 76%,
+            transparent 0 46%,
+            rgba(0,0,0,.72) 78%,
+            rgba(255,255,255,.10) 96%,
+            #08090b 100%
+        ),
+
+        repeating-radial-gradient(
+            circle,
+            #090a0c 0 1px,
+            #30343a 1.3px 1.8px,
+            #111317 2.2px 3.8px
+        ),
+
+        #171a1e;
+
+    animation:
+        spin
+        28s
+        linear
+        infinite;
+}
+
+
+.record::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset:
+        -3%;
+
+    z-index: -1;
+
+    border-radius:
+        50%;
+
+    border:
+        2px solid
+        var(--ambient-color-art);
+
+    box-shadow:
+        0 0 12px
+        var(--ambient-color-art),
+
+        inset 0 0 8px
+        rgba(255,255,255,.12);
+
+    opacity:
+        .72;
+
+    pointer-events:
+        none;
+}
+
+
+/* ==================================================
+   VINYL EDGE
+================================================== */
+
+.record::after {
+    content: "";
+
+    position: absolute;
+
+    inset: 2.5%;
+
+    border-radius:
+        50%;
+
+    border:
+        1px solid
+        rgba(220,225,230,.32);
+
+    box-shadow:
+        inset 0 0 10px
+        rgba(255,255,255,.13),
+
+        0 0 8px
+        rgba(255,255,255,.10);
+
+    pointer-events:
+        none;
+}
+
+
+/* ==================================================
+   ALBUM ART
+================================================== */
+
+.album {
+    position: absolute;
+
+    inset:
+       13%;
+
+    border-radius:
+        50%;
+
+    overflow:
+        hidden;
+
+    background:
+        linear-gradient(
+            135deg,
+            #25262a,
+            #111216
+        );
+
+    box-shadow:
+
+        0 0 0 1px
+        rgba(255,255,255,.16),
+
+        0 0 25px
+        var(--ambient-color-art),
+
+        inset
+        0 0 20px
+        rgba(0,0,0,.35);
+
+    transform:
+        translateZ(5px);
+
+    transition:
+        box-shadow 1.2s ease;
+}
+
+
+/* ==================================================
+   ALBUM ART IMAGE
+================================================== */
+
+#albumArt {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    border-radius:
+        50%;
+
+    opacity: 0;
+
+    transform:
+        scale(1.01);
+
+    transition:
+        opacity .8s ease,
+        transform .8s ease;
+}
+
+#albumArt.loaded {
     opacity: 1;
+
+    transform:
+        scale(1);
+}
+
+
+/* ==================================================
+   ALBUM ART GLASS HIGHLIGHT
+================================================== */
+
+.album::after {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    border-radius:
+        50%;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.24),
+            transparent 32%,
+            transparent 68%,
+            rgba(0,0,0,.18)
+        );
+
+    mix-blend-mode:
+        screen;
+
+    pointer-events:
+        none;
+}
+
+
+/* ==================================================
+   VINYL CENTER HOLE
+================================================== */
+
+.hole {
+    position: absolute;
+
+    z-index: 5;
+
+    width:
+    30px;
+
+    height:
+        30px;
+
+    border-radius:
+        50%;
+
+    left:
+        50%;
+
+    top:
+        50%;
+
+    transform:
+        translate(
+            -50%,
+            -50%
+        );
+
+background:
+    radial-gradient(
+        circle at center,
+        #bfc2c6 0 30%,
+        #5f6368 32% 100%
+    );
+
+    box-shadow:
+
+        0 0 0 2px
+        rgba(0,0,0,.45),
+
+        0 0 7px
+        rgba(255,255,255,.15);
+}
+
+
+/* ==================================================
+   VINYL ROTATION
+================================================== */
+
+@keyframes spin {
+
+    from {
+        transform:
+            rotateX(18deg)
+            rotateY(-20deg)
+            rotateZ(-8deg);
+    }
+
+    to {
+        transform:
+            rotateX(18deg)
+            rotateY(-20deg)
+            rotateZ(352deg);
+    }
+
+}
+
+
+/* ==================================================
+   NOW PLAYING
+================================================== */
+
+.now-playing {
+    margin-bottom:
+        5px;
+}
+
+.now-playing h1 {
+    margin:
+        0;
+
+    text-align:
+        center;
+}
+
+.now-playing-label {
+    margin-bottom:
+        30px;
+
+    margin-left:
+        40%;
+
+    font-family:
+        "Spline Sans",
+        sans-serif;
+
+    font-size:
+        12px;
+
+    line-height:
+        1;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        .20em;
+
+    text-transform:
+        uppercase;
+
+    color:
+        rgba(255,255,255,.46);
+}
+
+
+/* ==================================================
+   SONG TITLE
+   SORA 700
+================================================== */
+
+#title {
+    margin:
+        0;
+
+    font-family:
+        "Sora",
+        Arial,
+        sans-serif;
+
+    font-size:
+        clamp(
+            38px,
+            4.2vw,
+            56px
+        );
+
+    line-height:
+        1.08;
+
+    font-weight:
+        700;
+
+    letter-spacing:
+        -.03em;
+
+    color:
+        rgba(255,255,255,.96);
+
+    text-shadow:
+        0 3px 12px
+        rgba(0,0,0,.50);
+
+    transition:
+        opacity .35s ease,
+        transform .35s ease;
+}
+
+
+/* ==================================================
+   LYRICS AREA
+================================================== */
+
+.lyrics-area {
+    min-width:
+        0;
+
+    width:
+        100%;
+
+    display:
+        flex;
+
+    flex-direction:
+        column;
+
+    justify-content:
+        center;
 }
 
 
@@ -113,20 +880,9 @@ body {
 ================================================== */
 
 #overlay {
+    position: relative;
 
-    position: fixed;
-
-    left: 50%;
-
-    bottom: 90px;
-
-    transform:
-        translateX(-50%);
-
-    width:
-        min(1000px, 90vw);
-
-    text-align: center;
+    width: 100%;
 
     opacity: 0;
 
@@ -134,304 +890,12 @@ body {
         opacity .5s ease;
 }
 
-
 #overlay.visible {
-
     opacity: 1;
 }
 
-
-/*
-When harmonizing we intentionally hide
-the lyrics until the new Spotify position
-has been synchronized.
-*/
-
 #overlay.harmonizing {
-
     opacity: 0;
-}
-
-
-/* ==================================================
-   NOW PLAYING
-================================================== */
-
-.song-info {
-
-    margin-bottom: 28px;
-
-    opacity: .9;
-}
-
-
-#title {
-
-    margin: 0;
-
-    font-size: 34px;
-
-    line-height: 1.1;
-
-    font-weight: 700;
-
-    letter-spacing: -.5px;
-
-    color: white;
-
-    text-shadow:
-        0 2px 6px
-        rgba(0, 0, 0, .75);
-}
-
-
-#artist {
-
-    margin-top: 8px;
-
-    font-size: 17px;
-
-    font-weight: 500;
-
-    color:
-        rgba(255, 255, 255, .75);
-
-    text-shadow:
-        0 2px 6px
-        rgba(0, 0, 0, .65);
-}
-
-
-/* ==================================================
-   PLAYBACK BADGE
-================================================== */
-
-.badge {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 9px;
-
-    margin-bottom: 16px;
-
-    padding:
-        8px 15px;
-
-    border-radius: 999px;
-
-    background:
-        rgba(0, 0, 0, .5);
-
-    border:
-        1px solid
-        rgba(255, 255, 255, .12);
-
-    backdrop-filter:
-        blur(12px);
-
-    font-size: 10px;
-
-    font-weight: 700;
-
-    letter-spacing: 2px;
-
-    text-transform: uppercase;
-
-    color:
-        rgba(255, 255, 255, .8);
-
-    transition:
-        color .25s ease,
-        border-color .25s ease,
-        box-shadow .25s ease;
-}
-
-
-/* ==================================================
-   STATUS COLORS
-================================================== */
-
-.badge.playing {
-
-    color:
-        #1ed760;
-
-    border-color:
-        rgba(30, 215, 96, .35);
-
-    box-shadow:
-        0 0 15px
-        rgba(30, 215, 96, .15);
-}
-
-
-.badge.paused {
-
-    color:
-        #ffd60a;
-
-    border-color:
-        rgba(255, 214, 10, .35);
-
-    box-shadow:
-        0 0 15px
-        rgba(255, 214, 10, .15);
-}
-
-
-.badge.resumed {
-
-    color:
-        #1ed760;
-
-    border-color:
-        rgba(30, 215, 96, .35);
-}
-
-
-.badge.harmonizing {
-
-    color:
-        #ff9500;
-
-    border-color:
-        rgba(255, 149, 0, .4);
-
-    box-shadow:
-        0 0 18px
-        rgba(255, 149, 0, .2);
-}
-
-
-.badge.rewind {
-
-    color:
-        #4da6ff;
-
-    border-color:
-        rgba(77, 166, 255, .4);
-
-    box-shadow:
-        0 0 18px
-        rgba(77, 166, 255, .2);
-}
-
-
-.badge.stopped {
-
-    color:
-        rgba(255, 255, 255, .45);
-}
-
-
-/* ==================================================
-   STATUS DOT
-================================================== */
-
-.dot {
-
-    width: 8px;
-
-    height: 8px;
-
-    flex-shrink: 0;
-
-    border-radius: 50%;
-
-    background:
-        currentColor;
-
-    box-shadow:
-        0 0 8px
-        currentColor;
-
-    animation:
-        statusPulse 1.2s ease-in-out infinite;
-}
-
-
-/* ==================================================
-   STATUS FLICKER
-================================================== */
-
-.badge.flicker {
-
-    animation:
-        statusFlicker .65s ease-in-out;
-}
-
-
-@keyframes statusFlicker {
-
-    0% {
-
-        opacity: 1;
-
-        filter:
-            brightness(1);
-    }
-
-    20% {
-
-        opacity: .45;
-
-        filter:
-            brightness(1.8);
-    }
-
-    40% {
-
-        opacity: 1;
-
-        filter:
-            brightness(1);
-    }
-
-    60% {
-
-        opacity: .55;
-
-        filter:
-            brightness(1.6);
-    }
-
-    100% {
-
-        opacity: 1;
-
-        filter:
-            brightness(1);
-    }
-}
-
-
-@keyframes statusPulse {
-
-    0% {
-
-        transform:
-            scale(1);
-
-        opacity: .65;
-    }
-
-    50% {
-
-        transform:
-            scale(1.35);
-
-        opacity: 1;
-    }
-
-    100% {
-
-        transform:
-            scale(1);
-
-        opacity: .65;
-    }
 }
 
 
@@ -440,20 +904,21 @@ has been synchronized.
 ================================================== */
 
 .roller-viewport {
-
     position: relative;
 
     width: 100%;
 
-    height: 320px;
+    height:
+        320px;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 
     -webkit-mask-image:
         linear-gradient(
             to bottom,
             transparent 0%,
-            black 20%,
+            black 30%,
             black 80%,
             transparent 100%
         );
@@ -462,21 +927,17 @@ has been synchronized.
         linear-gradient(
             to bottom,
             transparent 0%,
-            black 20%,
+            black 30%,
             black 80%,
             transparent 100%
         );
 }
 
-
 #lyrics {
-
     position: absolute;
 
     left: 0;
-
     right: 0;
-
     top: 0;
 
     transition:
@@ -495,40 +956,52 @@ has been synchronized.
 ================================================== */
 
 .lyric-line {
+    height:
+        64px;
 
-    height: 64px;
+    display:
+        flex;
 
-    display: flex;
+    align-items:
+        center;
 
-    align-items: center;
-
-    justify-content: center;
+    justify-content:
+        center;
 
     padding:
         0 20px;
 
-    font-size: 29px;
+    font-family:
+        "Spline Sans",
+        Arial,
+        sans-serif;
 
-    line-height: 1.25;
+    font-size:
+        29px;
 
-    font-weight: 500;
+    line-height:
+        1.25;
+
+    font-weight:
+        700;
 
     color:
-        rgba(255, 255, 255, .35);
+        rgba(255,255,255,.35);
 
     text-shadow:
         0 2px 6px
-        rgba(0, 0, 0, .65);
+        rgba(0,0,0,.65);
 
-    transform: none;
+    transform:
+        none;
 }
 
-
 .lyric-line .wave-char {
+    display:
+        inline-block;
 
-    display: inline-block;
-
-    position: relative;
+    position:
+        relative;
 
     transform-origin:
         center center;
@@ -536,9 +1009,11 @@ has been synchronized.
     will-change:
         transform;
 
-    backface-visibility: hidden;
+    backface-visibility:
+        hidden;
 
-    -webkit-font-smoothing: antialiased;
+    -webkit-font-smoothing:
+        antialiased;
 }
 
 
@@ -547,28 +1022,38 @@ has been synchronized.
 ================================================== */
 
 .lyric-line.current {
+    opacity:
+        1;
 
-    opacity: 1;
+    transform:
+        none;
 
-    transform: none;
+    font-family:
+        "Spline Sans",
+        Arial,
+        sans-serif;
 
-    font-size: 30px;
+    font-size:
+        30px;
 
-    font-weight: 700;
+    font-weight:
+        700;
 
-    color: white;
+    color:
+        white;
 
     text-shadow:
         0 2px 8px
-        rgba(0, 0, 0, .75);
+        rgba(0,0,0,.75);
 }
 
+.lyric-line.current
+.wave-char {
+    color:
+        white;
 
-.lyric-line.current .wave-char {
-
-    color: white;
-
-    -webkit-text-fill-color: white;
+    -webkit-text-fill-color:
+        white;
 }
 
 
@@ -578,7 +1063,6 @@ has been synchronized.
 
 .lyric-line.current
 .wave-char.wave-active {
-
     animation:
         smoothLetterWave
         .42s
@@ -590,32 +1074,28 @@ has been synchronized.
         );
 }
 
-
 @keyframes smoothLetterWave {
 
     0% {
-
         transform:
             scale(1);
     }
 
     35% {
-
         transform:
             scale(1.35);
     }
 
     50% {
-
         transform:
             scale(1.42);
     }
 
     100% {
-
         transform:
             scale(1);
     }
+
 }
 
 
@@ -624,34 +1104,35 @@ has been synchronized.
 ================================================== */
 
 .lyric-line.prev-2 {
+    opacity:
+        .12;
 
-    opacity: .12;
-
-    transform: none;
+    transform:
+        none;
 }
-
 
 .lyric-line.prev-1 {
+    opacity:
+        .35;
 
-    opacity: .35;
-
-    transform: none;
+    transform:
+        none;
 }
-
 
 .lyric-line.next-1 {
+    opacity:
+        .40;
 
-    opacity: .40;
-
-    transform: none;
+    transform:
+        none;
 }
 
-
 .lyric-line.next-2 {
+    opacity:
+        .16;
 
-    opacity: .16;
-
-    transform: none;
+    transform:
+        none;
 }
 
 
@@ -660,13 +1141,24 @@ has been synchronized.
 ================================================== */
 
 #loading {
+    display:
+        none;
 
-    display: none;
+    margin-top:
+        8px;
 
-    font-size: 16px;
+    text-align:
+        center;
+
+    font-family:
+        "Spline Sans",
+        sans-serif;
+
+    font-size:
+        14px;
 
     color:
-        rgba(255, 255, 255, .55);
+        rgba(255,255,255,.45);
 }
 
 
@@ -675,13 +1167,21 @@ has been synchronized.
 ================================================== */
 
 #noLyrics {
+    display:
+        none;
 
-    display: none;
+    text-align:
+        center;
 
-    font-size: 22px;
+    font-family:
+        "Spline Sans",
+        sans-serif;
+
+    font-size:
+        20px;
 
     color:
-        rgba(255, 255, 255, .5);
+        rgba(255,255,255,.5);
 }
 
 
@@ -692,25 +1192,24 @@ has been synchronized.
 @keyframes songChange {
 
     0% {
-
-        opacity: 0;
+        opacity:
+            0;
 
         transform:
             translateY(15px);
     }
 
     100% {
-
-        opacity: 1;
+        opacity:
+            1;
 
         transform:
             translateY(0);
     }
+
 }
 
-
 .song-change {
-
     animation:
         songChange .7s
         cubic-bezier(
@@ -726,29 +1225,118 @@ has been synchronized.
    MOBILE
 ================================================== */
 
-@media (max-width: 700px) {
+@media (max-width: 800px) {
+
+    .scene {
+        display:
+            flex;
+
+        flex-direction:
+            column;
+
+        justify-content:
+            flex-start;
+
+        overflow-y:
+            auto;
+
+        gap:
+            20px;
+
+        width:
+            100%;
+
+        padding:
+            16px;
+    }
+
+    .glass {
+        width:
+            95vw;
+
+        min-height:
+            250px;
+
+        padding:
+            42px 25px;
+
+        border-radius:
+            32px;
+    }
+
+    .content {
+        min-height:
+            250px;
+    }
+
+    .record {
+        width:
+            175px;
+    }
+
+    .vinyl-area {
+        order:
+            1;
+    }
+
+    .lyrics-area {
+        width:
+            95vw;
+
+        order:
+            2;
+    }
+
+    .now-playing {
+        margin-bottom:
+            20px;
+
+        text-align:
+            center;
+    }
+
+    .now-playing-label {
+        margin-left:
+            0;
+    }
 
     #title {
-
-        font-size: 26px;
+        font-size:
+            34px;
     }
-
-
-    #artist {
-
-        font-size: 15px;
-    }
-
 
     .lyric-line {
-
-        font-size: 22px;
+        font-size:
+            22px;
     }
 
-
     .lyric-line.current {
+        font-size:
+            23px;
+    }
 
-        font-size: 23px;
+}
+
+
+/* ==================================================
+   VERY SMALL SCREENS
+================================================== */
+
+@media (max-width: 500px) {
+
+    .glass {
+        padding:
+            30px 18px;
+    }
+
+    .record {
+        width:
+            145px;
+    }
+
+    #title {
+        font-size:
+            28px;
     }
 
 }
@@ -760,69 +1348,113 @@ has been synchronized.
 
 <body>
 
-
 <div id="app">
 
-
-    <!-- ==================================================
-         NOW PLAYING
-    ================================================== -->
-
-    <div id="titleWrap">
-
-        <div
-            id="playbackBadge"
-            class="badge stopped"
-        >
-
-            <span class="dot"></span>
-
-            <span id="playbackText">
-                ■ STOPPED
-            </span>
-
-        </div>
+    <div
+        class="ambient"
+        id="ambient"
+    ></div>
 
 
-        <div class="song-info">
+    <main class="scene">
 
-            <h1 id="title">
-                Waiting for Spotify...
-            </h1>
+        <section class="glass">
+
+            <div class="highlight"></div>
 
 
-            <div id="artist">
-                Connect Spotify
+            <div class="content">
+
+
+                <!-- ======================================
+                     VINYL
+                ======================================= -->
+
+                <div class="vinyl-area">
+
+                    <div
+                        class="record"
+                        id="record"
+                    >
+
+                        <div
+                            class="album"
+                            id="album"
+                        >
+
+                            <img
+                                id="albumArt"
+                                alt=""
+                            >
+
+                        </div>
+
+
+                        <div class="hole"></div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ======================================
+                     LYRICS SIDE
+                ======================================= -->
+
+                <div class="lyrics-area">
+
+
+                    <!-- ==================================
+                         NOW PLAYING
+                    =================================== -->
+
+                    <div class="now-playing">
+
+                        <div
+                            class="now-playing-label"
+                        >
+                            -- Now Playing --
+                        </div>
+
+
+                        <h1 id="title">
+                            Waiting for Spotify...
+                        </h1>
+
+                    </div>
+
+
+                    <!-- ==================================
+                         LYRICS
+                    =================================== -->
+
+                    <div id="overlay">
+
+                        <div class="roller-viewport">
+
+                            <div id="lyrics"></div>
+
+                        </div>
+
+
+                        <div id="loading">
+                            Loading lyrics...
+                        </div>
+
+
+                        <div id="noLyrics">
+                            Lyrics unavailable
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
-        </div>
+        </section>
 
-    </div>
-
-
-    <!-- ==================================================
-         LYRICS
-    ================================================== -->
-
-    <div id="overlay">
-
-        <div class="roller-viewport">
-
-            <div id="lyrics"></div>
-
-        </div>
-
-
-        <div id="loading">
-            Loading lyrics...
-        </div>
-
-
-        <div id="noLyrics">
-            Lyrics unavailable
-        </div>
-
-    </div>
+    </main>
 
 </div>
 
@@ -836,46 +1468,31 @@ has been synchronized.
 let currentTrackId =
     null;
 
-
 let currentLyrics =
     [];
-
 
 let lineElements =
     [];
 
-
 let lastServerPosition =
     0;
-
 
 let lastServerSyncTime =
     0;
 
-
 let lastLyricIndex =
     undefined;
-
 
 let lyricsRequestTrack =
     null;
 
-
-/*
-Tracks whether the frontend is
-currently harmonizing.
-*/
-
 let harmonizing =
     false;
 
-
-/*
-Used to prevent stale transitions
-from hiding the lyrics forever.
-*/
-
 let lastTransition =
+    null;
+
+let currentAlbumArt =
     null;
 
 
@@ -886,34 +1503,20 @@ let lastTransition =
 const ROW_HEIGHT =
     64;
 
-
 const WAVE_DURATION =
     420;
-
 
 const WAVE_DELAY =
     70;
 
-
 const WAVE_PAUSE =
     500;
-
 
 const WAVE_DELAY_MIN =
     25;
 
-
 const WAVE_DELAY_MAX =
     100;
-
-
-/*
-How long we locally hide the lyrics
-after a seek transition.
-
-The server synchronization still
-determines the actual lyric position.
-*/
 
 const HARMONIZE_HIDE_TIME =
     900;
@@ -928,53 +1531,776 @@ const overlay =
         "overlay"
     );
 
-
-const titleWrap =
-    document.getElementById(
-        "titleWrap"
-    );
-
-
 const titleElement =
     document.getElementById(
         "title"
     );
-
-
-const artistElement =
-    document.getElementById(
-        "artist"
-    );
-
 
 const lyricsElement =
     document.getElementById(
         "lyrics"
     );
 
-
 const loadingElement =
     document.getElementById(
         "loading"
     );
-
 
 const noLyricsElement =
     document.getElementById(
         "noLyrics"
     );
 
-
-const playbackBadge =
+const albumArtElement =
     document.getElementById(
-        "playbackBadge"
+        "albumArt"
+    );
+
+const ambientElement =
+    document.getElementById(
+        "ambient"
     );
 
 
-const playbackText =
-    document.getElementById(
-        "playbackText"
+/* ==================================================
+   DEFAULT AMBIENT
+================================================== */
+
+function setDefaultAmbient() {
+
+    document.documentElement.style.setProperty(
+        "--ambient-color-soft",
+        "rgba(95, 105, 125, .12)"
     );
+
+    document.documentElement.style.setProperty(
+        "--ambient-color-faint",
+        "rgba(75, 85, 105, .08)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--ambient-color-center",
+        "rgba(100, 110, 130, .05)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--ambient-color-glass",
+        "rgba(90, 100, 120, .10)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--ambient-color-art",
+        "rgba(100, 110, 130, .12)"
+    );
+
+
+    /*
+     * Default glass colors.
+     */
+    document.documentElement.style.setProperty(
+        "--glass-color-primary",
+        "rgba(12, 13, 17, .32)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--glass-color-secondary",
+        "rgba(12, 13, 17, .22)"
+    );
+
+
+    /*
+     * Default border.
+     */
+    document.documentElement.style.setProperty(
+        "--glass-border-color",
+        "rgba(255, 255, 255, .075)"
+    );
+
+
+    /*
+     * Default trace.
+     */
+    document.documentElement.style.setProperty(
+        "--glass-trace-soft",
+        "rgba(255, 255, 255, .08)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--glass-trace-medium",
+        "rgba(255, 255, 255, .22)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--glass-trace-bright",
+        "rgba(255, 255, 255, .55)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--glass-trace-glow",
+        "rgba(255, 255, 255, .25)"
+    );
+
+    document.documentElement.style.setProperty(
+        "--glass-outer-glow",
+        "rgba(255, 255, 255, .015)"
+    );
+}
+
+setDefaultAmbient();
+
+
+/* ==================================================
+   ALBUM COLOR
+================================================== */
+
+function updateAmbientFromImage(
+    image
+) {
+
+    try {
+
+        const canvas =
+            document.createElement(
+                "canvas"
+            );
+
+        const context =
+            canvas.getContext(
+                "2d",
+                {
+                    willReadFrequently:
+                        true
+                }
+            );
+
+        const sampleSize =
+            32;
+
+        canvas.width =
+            sampleSize;
+
+        canvas.height =
+            sampleSize;
+
+
+        context.drawImage(
+            image,
+            0,
+            0,
+            sampleSize,
+            sampleSize
+        );
+
+
+        const pixels =
+            context.getImageData(
+                0,
+                0,
+                sampleSize,
+                sampleSize
+            ).data;
+
+
+        let red =
+            0;
+
+        let green =
+            0;
+
+        let blue =
+            0;
+
+        let count =
+            0;
+
+
+        for (
+            let i = 0;
+            i < pixels.length;
+            i += 4
+        ) {
+
+            const r =
+                pixels[i];
+
+            const g =
+                pixels[i + 1];
+
+            const b =
+                pixels[i + 2];
+
+            const alpha =
+                pixels[i + 3];
+
+
+            if (
+                alpha < 40
+            ) {
+                continue;
+            }
+
+
+            const brightness =
+                (
+                    r +
+                    g +
+                    b
+                ) / 3;
+
+
+            if (
+                brightness < 18
+            ) {
+                continue;
+            }
+
+
+            red +=
+                r;
+
+            green +=
+                g;
+
+            blue +=
+                b;
+
+            count++;
+        }
+
+
+        if (
+            count === 0
+        ) {
+
+            setDefaultAmbient();
+
+            return;
+        }
+
+
+        red =
+            Math.round(
+                red / count
+            );
+
+        green =
+            Math.round(
+                green / count
+            );
+
+        blue =
+            Math.round(
+                blue / count
+            );
+
+
+        const hsl =
+            rgbToHsl(
+                red,
+                green,
+                blue
+            );
+
+
+        /*
+         * ==========================================
+         * SAFE ALBUM COLOR
+         * ==========================================
+         *
+         * Keep the background restrained.
+         *
+         * Saturation:
+         * 18% → 38%
+         *
+         * Lightness:
+         * 22% → 36%
+         */
+
+        const safeSaturation =
+            Math.min(
+                Math.max(
+                    hsl.s,
+                    18
+                ),
+                38
+            );
+
+
+        const safeLightness =
+            Math.min(
+                Math.max(
+                    hsl.l,
+                    22
+                ),
+                36
+            );
+
+
+        const safeColor =
+            `hsl(${hsl.h} ${safeSaturation}% ${safeLightness}%)`;
+
+
+        /* ==================================================
+           AMBIENT COLORS
+        ================================================== */
+
+        const softColor =
+            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .105)`;
+
+
+        const faintColor =
+            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .055)`;
+
+
+        const centerColor =
+            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .035)`;
+
+
+        const glassColor =
+            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .065)`;
+
+
+        const artColor =
+            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness + 3}%, .17)`;
+
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-soft",
+            softColor
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-faint",
+            faintColor
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-center",
+            centerColor
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-glass",
+            glassColor
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-art",
+            artColor
+        );
+
+
+        /* ==================================================
+           GLASS COLOR
+        ================================================== */
+
+        /*
+         * Very dark album-colored glass.
+         *
+         * The color is intentionally kept dark
+         * so the lyrics remain the visual focus.
+         */
+
+        const glassPrimary =
+            `hsla(${hsl.h}, ${safeSaturation}%, 9%, .72)`;
+
+
+        const glassSecondary =
+            `hsla(${hsl.h}, ${safeSaturation}%, 5%, .84)`;
+
+
+        document.documentElement.style.setProperty(
+            "--glass-color-primary",
+            glassPrimary
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-color-secondary",
+            glassSecondary
+        );
+
+
+        /* ==================================================
+           GLASS BORDER COLOR
+        ================================================== */
+
+        /*
+         * The static border receives a subtle version
+         * of the album color.
+         */
+
+        const glassBorderColor =
+            `hsla(${hsl.h}, ${safeSaturation}%, 62%, .16)`;
+
+
+        document.documentElement.style.setProperty(
+            "--glass-border-color",
+            glassBorderColor
+        );
+
+
+        /* ==================================================
+           TRAVELING BORDER TRACE
+        ================================================== */
+
+        /*
+         * Soft colored part of the trace.
+         */
+
+        const traceSoft =
+            `hsla(${hsl.h}, ${safeSaturation}%, 60%, .10)`;
+
+
+        /*
+         * Main colored part.
+         */
+
+        const traceMedium =
+            `hsla(${hsl.h}, ${safeSaturation}%, 68%, .38)`;
+
+
+        /*
+         * Bright leading section.
+         */
+
+        const traceBright =
+            `hsla(${hsl.h}, ${safeSaturation}%, 78%, .82)`;
+
+
+        /*
+         * Glow surrounding the trace.
+         */
+
+        const traceGlow =
+            `hsla(${hsl.h}, ${safeSaturation}%, 65%, .42)`;
+
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-soft",
+            traceSoft
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-medium",
+            traceMedium
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-bright",
+            traceBright
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-glow",
+            traceGlow
+        );
+
+
+        /* ==================================================
+           OUTER GLASS GLOW
+        ================================================== */
+
+        const outerGlow =
+            `hsla(${hsl.h}, ${safeSaturation}%, 35%, .055)`;
+
+
+        document.documentElement.style.setProperty(
+            "--glass-outer-glow",
+            outerGlow
+        );
+
+
+        console.log(
+            "Album color:",
+            safeColor
+        );
+
+    }
+
+    catch (error) {
+
+        /*
+         * IMPORTANT:
+         *
+         * A canvas/CORS failure must NOT
+         * prevent album artwork from displaying.
+         *
+         * We simply keep the previous/default
+         * ambient and glass colors.
+         */
+
+        console.warn(
+            "Could not extract album color:",
+            error.message
+        );
+    }
+}
+
+
+/* ==================================================
+   RGB → HSL
+================================================== */
+
+function rgbToHsl(
+    r,
+    g,
+    b
+) {
+
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+
+    const max =
+        Math.max(
+            r,
+            g,
+            b
+        );
+
+
+    const min =
+        Math.min(
+            r,
+            g,
+            b
+        );
+
+
+    let h =
+        0;
+
+    let s =
+        0;
+
+
+    const l =
+        (
+            max +
+            min
+        ) / 2;
+
+
+    if (
+        max !== min
+    ) {
+
+        const d =
+            max -
+            min;
+
+
+        s =
+            l > .5
+                ? d /
+                    (
+                        2 -
+                        max -
+                        min
+                    )
+                : d /
+                    (
+                        max +
+                        min
+                    );
+
+
+        switch (
+            max
+        ) {
+
+            case r:
+
+                h =
+                    (
+                        g -
+                        b
+                    ) / d +
+                    (
+                        g < b
+                            ? 6
+                            : 0
+                    );
+
+                break;
+
+
+            case g:
+
+                h =
+                    (
+                        b -
+                        r
+                    ) / d +
+                    2;
+
+                break;
+
+
+            case b:
+
+                h =
+                    (
+                        r -
+                        g
+                    ) / d +
+                    4;
+
+                break;
+        }
+
+
+        h /=
+            6;
+    }
+
+
+    return {
+
+        h:
+            Math.round(
+                h * 360
+            ),
+
+        s:
+            Math.round(
+                s * 100
+            ),
+
+        l:
+            Math.round(
+                l * 100
+            )
+    };
+}
+
+
+/* ==================================================
+   LOAD ALBUM ART
+================================================== */
+
+function loadAlbumArt(
+    url
+) {
+
+    if (
+        !url
+    ) {
+
+        albumArtElement.classList.remove(
+            "loaded"
+        );
+
+        albumArtElement.removeAttribute(
+            "src"
+        );
+
+        currentAlbumArt =
+            null;
+
+        setDefaultAmbient();
+
+        return;
+    }
+
+
+    if (
+        currentAlbumArt ===
+        url
+    ) {
+        return;
+    }
+
+
+    currentAlbumArt =
+        url;
+
+
+    /*
+     * ==============================================
+     * IMPORTANT ALBUM ART FIX
+     * ==============================================
+     *
+     * Set the visible image FIRST.
+     *
+     * Do not wait for canvas color extraction.
+     *
+     * This guarantees the Spotify artwork
+     * appears even if Spotify's CDN does not
+     * allow canvas pixel access.
+     */
+
+    albumArtElement.classList.remove(
+        "loaded"
+    );
+
+
+    albumArtElement.src =
+        url;
+
+
+    albumArtElement.onload =
+        () => {
+
+            albumArtElement.classList.add(
+                "loaded"
+            );
+        };
+
+
+    albumArtElement.onerror =
+        () => {
+
+            console.warn(
+                "Album artwork could not be loaded:",
+                url
+            );
+
+            albumArtElement.classList.remove(
+                "loaded"
+            );
+        };
+
+
+    /*
+     * ==============================================
+     * COLOR EXTRACTION
+     * ==============================================
+     *
+     * This is completely separate from
+     * displaying the artwork.
+     */
+
+    const image =
+        new Image();
+
+
+    image.crossOrigin =
+        "anonymous";
+
+
+    image.onload =
+        () => {
+
+            updateAmbientFromImage(
+                image
+            );
+        };
+
+
+    image.onerror =
+        () => {
+
+            console.warn(
+                "Could not load album image for color extraction."
+            );
+        };
+
+
+    image.src =
+        url;
+}
 
 
 /* ==================================================
@@ -987,20 +2313,18 @@ async function getSpotify() {
 
         const response =
             await fetch(
-
                 "/api/current?ts=" +
                 Date.now(),
-
                 {
                     cache:
                         "no-store"
                 }
-
             );
 
 
-        if (!response.ok) {
-
+        if (
+            !response.ok
+        ) {
             return null;
         }
 
@@ -1016,133 +2340,7 @@ async function getSpotify() {
             error
         );
 
-
         return null;
-    }
-}
-
-
-/* ==================================================
-   PLAYBACK STATUS UI
-================================================== */
-
-function setPlaybackStatus(
-    status,
-    flicker = false
-) {
-
-    playbackBadge.className =
-        "badge";
-
-
-    let text =
-        "■ STOPPED";
-
-
-    switch (
-        status
-    ) {
-
-        case "PLAYING":
-
-            playbackBadge.classList.add(
-                "playing"
-            );
-
-            text =
-                "▶ PLAYING";
-
-            break;
-
-
-        case "RESUMED":
-
-            playbackBadge.classList.add(
-                "resumed"
-            );
-
-            text =
-                "▶ RESUMED";
-
-            break;
-
-
-        case "PAUSED":
-
-            playbackBadge.classList.add(
-                "paused"
-            );
-
-            text =
-                "⏸ PAUSED";
-
-            break;
-
-
-        case "FAST_FORWARD":
-
-            playbackBadge.classList.add(
-                "harmonizing"
-            );
-
-            text =
-                "⏩ HARMONIZING";
-
-            break;
-
-
-        case "REWIND":
-
-            playbackBadge.classList.add(
-                "rewind"
-            );
-
-            text =
-                "⏪ HARMONIZING";
-
-            break;
-
-
-        case "TRACK_CHANGED":
-
-            playbackBadge.classList.add(
-                "playing"
-            );
-
-            text =
-                "▶ PLAYING";
-
-            break;
-
-
-        default:
-
-            playbackBadge.classList.add(
-                "stopped"
-            );
-
-            text =
-                "■ STOPPED";
-    }
-
-
-    playbackText.textContent =
-        text;
-
-
-    if (flicker) {
-
-        playbackBadge.classList.remove(
-            "flicker"
-        );
-
-
-        void playbackBadge.offsetWidth;
-
-
-        playbackBadge.classList.add(
-            "flicker"
-        );
     }
 }
 
@@ -1155,8 +2353,9 @@ async function getLyrics(
     track
 ) {
 
-    if (!track) {
-
+    if (
+        !track
+    ) {
         return;
     }
 
@@ -1165,7 +2364,6 @@ async function getLyrics(
         lyricsRequestTrack ===
         track.id
     ) {
-
         return;
     }
 
@@ -1177,7 +2375,6 @@ async function getLyrics(
     loadingElement.style.display =
         "block";
 
-
     noLyricsElement.style.display =
         "none";
 
@@ -1185,10 +2382,8 @@ async function getLyrics(
     lyricsElement.innerHTML =
         "";
 
-
     lineElements =
         [];
-
 
     currentLyrics =
         [];
@@ -1219,19 +2414,18 @@ async function getLyrics(
 
         const response =
             await fetch(
-
                 "/api/lyrics?" +
                 params.toString(),
-
                 {
                     cache:
                         "no-store"
                 }
-
             );
 
 
-        if (!response.ok) {
+        if (
+            !response.ok
+        ) {
 
             throw new Error(
                 "Lyrics request failed"
@@ -1247,10 +2441,6 @@ async function getLyrics(
             "none";
 
 
-        /*
-        Prefer synchronized lyrics.
-        */
-
         if (
             data.syncedLyrics
         ) {
@@ -1261,10 +2451,6 @@ async function getLyrics(
                 );
         }
 
-
-        /*
-        Plain lyric fallback.
-        */
 
         if (
             currentLyrics.length === 0 &&
@@ -1309,10 +2495,8 @@ async function getLyrics(
             error
         );
 
-
         loadingElement.style.display =
             "none";
-
 
         noLyricsElement.style.display =
             "block";
@@ -1348,8 +2532,9 @@ function parseSyncedLyrics(
             );
 
 
-        if (!match) {
-
+        if (
+            !match
+        ) {
             continue;
         }
 
@@ -1377,8 +2562,9 @@ function parseSyncedLyrics(
             match[3].trim();
 
 
-        if (!lyric) {
-
+        if (
+            !lyric
+        ) {
             continue;
         }
 
@@ -1455,7 +2641,6 @@ function getCurrentLyricIndex(
     if (
         currentLyrics.length === 0
     ) {
-
         return -1;
     }
 
@@ -1478,8 +2663,9 @@ function getCurrentLyricIndex(
             currentIndex =
                 i;
 
-        } else {
+        }
 
+        else {
             break;
         }
     }
@@ -1506,7 +2692,6 @@ function classifyLine(
     if (
         diff === 0
     ) {
-
         return "current";
     }
 
@@ -1514,7 +2699,6 @@ function classifyLine(
     if (
         diff === -1
     ) {
-
         return "prev-1";
     }
 
@@ -1522,7 +2706,6 @@ function classifyLine(
     if (
         diff <= -2
     ) {
-
         return "prev-2";
     }
 
@@ -1530,7 +2713,6 @@ function classifyLine(
     if (
         diff === 1
     ) {
-
         return "next-1";
     }
 
@@ -1643,8 +2825,9 @@ async function runCharacterWave(
     }
 
 
-    if (!lyricElement) {
-
+    if (
+        !lyricElement
+    ) {
         return;
     }
 
@@ -1653,7 +2836,6 @@ async function runCharacterWave(
         token !==
         waveToken
     ) {
-
         return;
     }
 
@@ -1674,14 +2856,15 @@ async function runCharacterWave(
     );
 
 
-    await sleep(50);
+    await sleep(
+        50
+    );
 
 
     if (
         token !==
         waveToken
     ) {
-
         return;
     }
 
@@ -1696,20 +2879,13 @@ async function runCharacterWave(
             token !==
             waveToken
         ) {
-
             return;
         }
 
 
-        /*
-        Do not animate while paused
-        or harmonizing.
-        */
-
         if (
             harmonizing
         ) {
-
             return;
         }
 
@@ -1746,7 +2922,6 @@ async function runCharacterWave(
         token !==
         waveToken
     ) {
-
         return;
     }
 
@@ -1760,7 +2935,6 @@ async function runCharacterWave(
         token !==
         waveToken
     ) {
-
         return;
     }
 
@@ -1793,7 +2967,6 @@ function getLineDuration(
         !line ||
         !next
     ) {
-
         return 3000;
     }
 
@@ -1806,7 +2979,6 @@ function getLineDuration(
     if (
         diff <= 0
     ) {
-
         return 3000;
     }
 
@@ -1840,7 +3012,6 @@ function getWaveDelayForLine(
             duration -
             WAVE_DURATION -
             200,
-
             400
         );
 
@@ -1871,7 +3042,6 @@ function renderLyrics(
     if (
         lineElements.length === 0
     ) {
-
         return;
     }
 
@@ -1902,7 +3072,6 @@ function renderLyrics(
     if (
         currentIndex < 0
     ) {
-
         return;
     }
 
@@ -1988,7 +3157,6 @@ function updateLyrics(
         currentLyrics.length === 0 ||
         harmonizing
     ) {
-
         return;
     }
 
@@ -1998,11 +3166,6 @@ function updateLyrics(
             position
         );
 
-
-    /*
-    Only restart the wave when
-    the lyric actually changes.
-    */
 
     if (
         currentIndex !==
@@ -2029,7 +3192,6 @@ function getEstimatedPosition() {
     if (
         !lastServerSyncTime
     ) {
-
         return lastServerPosition;
     }
 
@@ -2058,47 +3220,18 @@ async function harmonize(
         true;
 
 
-    /*
-    Stop current wave immediately.
-    */
-
     waveToken++;
 
-
-    /*
-    Hide lyrics.
-    */
 
     overlay.classList.add(
         "harmonizing"
     );
 
 
-    /*
-    Display harmonizing state.
-    */
-
-    setPlaybackStatus(
-        transition,
-        true
-    );
-
-
-    /*
-    Give the server a moment to
-    establish the new position.
-    */
-
     await sleep(
         HARMONIZE_HIDE_TIME
     );
 
-
-    /*
-    If another transition happened
-    during this time, don't blindly
-    reveal the lyrics.
-    */
 
     if (
         lastTransition ===
@@ -2135,15 +3268,12 @@ async function updateSpotify() {
         await getSpotify();
 
 
-    if (!track) {
-
+    if (
+        !track
+    ) {
         return;
     }
 
-
-    /*
-    Synchronize local clock.
-    */
 
     lastServerPosition =
         Number(
@@ -2155,11 +3285,9 @@ async function updateSpotify() {
         performance.now();
 
 
-    /*
-    ==========================================
-    STOPPED
-    ==========================================
-    */
+    /* ==========================================
+       STOPPED
+    ========================================== */
 
     if (
         !track.playing &&
@@ -2180,25 +3308,34 @@ async function updateSpotify() {
         );
 
 
-        titleWrap.classList.remove(
-            "visible"
+        setDefaultAmbient();
+
+
+        titleElement.textContent =
+            "Waiting for Spotify...";
+
+
+        albumArtElement.classList.remove(
+            "loaded"
         );
 
 
-        setPlaybackStatus(
-            "STOPPED"
+        albumArtElement.removeAttribute(
+            "src"
         );
+
+
+        currentAlbumArt =
+            null;
 
 
         return;
     }
 
 
-    /*
-    ==========================================
-    NEW TRACK
-    ==========================================
-    */
+    /* ==========================================
+       NEW TRACK
+    ========================================== */
 
     if (
         currentTrackId !==
@@ -2212,10 +3349,6 @@ async function updateSpotify() {
             track.artist
         );
 
-
-        /*
-        Stop previous animation.
-        */
 
         waveToken++;
 
@@ -2253,9 +3386,9 @@ async function updateSpotify() {
             "";
 
 
-        /*
-        Update title.
-        */
+        /* ======================================
+           TITLE
+        ====================================== */
 
         titleElement.classList.remove(
             "song-change"
@@ -2274,38 +3407,18 @@ async function updateSpotify() {
         );
 
 
-        artistElement.textContent =
-            track.artist;
+        /* ======================================
+           ALBUM ART
+        ====================================== */
+
+        loadAlbumArt(
+            track.albumArt
+        );
 
 
-        /*
-        New track while playing.
-        */
-
-        if (
-            track.playing
-        ) {
-
-            setPlaybackStatus(
-                "PLAYING",
-                true
-            );
-
-        } else {
-
-            setPlaybackStatus(
-                "PAUSED",
-                true
-            );
-        }
-
-
-        /*
-        Load lyrics once.
-
-        The server cache prevents repeated
-        LRCLIB requests.
-        */
+        /* ======================================
+           LYRICS
+        ====================================== */
 
         await getLyrics(
             track
@@ -2313,11 +3426,9 @@ async function updateSpotify() {
     }
 
 
-    /*
-    ==========================================
-    TRANSITION HANDLING
-    ==========================================
-    */
+    /* ==========================================
+       TRANSITION
+    ========================================== */
 
     const transition =
         track.transition;
@@ -2332,10 +3443,6 @@ async function updateSpotify() {
         lastTransition =
             transition;
 
-
-        /*
-        PAUSE
-        */
 
         if (
             transition ===
@@ -2359,19 +3466,9 @@ async function updateSpotify() {
             );
 
 
-            setPlaybackStatus(
-                "PAUSED",
-                true
-            );
-
-
             return;
         }
 
-
-        /*
-        RESUME
-        */
 
         if (
             transition ===
@@ -2384,12 +3481,6 @@ async function updateSpotify() {
 
             overlay.classList.add(
                 "visible"
-            );
-
-
-            setPlaybackStatus(
-                "RESUMED",
-                true
             );
 
 
@@ -2406,10 +3497,6 @@ async function updateSpotify() {
         }
 
 
-        /*
-        FAST FORWARD
-        */
-
         if (
             transition ===
             "FAST_FORWARD"
@@ -2424,10 +3511,6 @@ async function updateSpotify() {
         }
 
 
-        /*
-        REWIND
-        */
-
         if (
             transition ===
             "REWIND"
@@ -2441,10 +3524,6 @@ async function updateSpotify() {
             return;
         }
 
-
-        /*
-        TRACK CHANGED
-        */
 
         if (
             transition ===
@@ -2465,12 +3544,6 @@ async function updateSpotify() {
             );
 
 
-            setPlaybackStatus(
-                "PLAYING",
-                true
-            );
-
-
             lastLyricIndex =
                 undefined;
 
@@ -2482,11 +3555,9 @@ async function updateSpotify() {
     }
 
 
-    /*
-    ==========================================
-    NORMAL PLAYING
-    ==========================================
-    */
+    /* ==========================================
+       NORMAL PLAYING
+    ========================================== */
 
     if (
         track.playing
@@ -2506,29 +3577,6 @@ async function updateSpotify() {
         );
 
 
-        titleWrap.classList.add(
-            "visible"
-        );
-
-
-        /*
-        Don't overwrite RESUMED/
-        transition messages immediately.
-        */
-
-        if (
-            transition !==
-            "RESUMED" &&
-            transition !==
-            "TRACK_CHANGED"
-        ) {
-
-            setPlaybackStatus(
-                "PLAYING"
-            );
-        }
-
-
         updateLyrics(
             getEstimatedPosition()
         );
@@ -2538,11 +3586,9 @@ async function updateSpotify() {
     }
 
 
-    /*
-    ==========================================
-    PAUSED
-    ==========================================
-    */
+    /* ==========================================
+       PAUSED
+    ========================================== */
 
     harmonizing =
         false;
@@ -2559,11 +3605,6 @@ async function updateSpotify() {
     overlay.classList.remove(
         "harmonizing"
     );
-
-
-    setPlaybackStatus(
-        "PAUSED"
-    );
 }
 
 
@@ -2576,16 +3617,7 @@ updateSpotify();
 
 /* ==================================================
    SERVER SYNC
-==================================================
-
-IMPORTANT:
-
-This only requests OUR server.
-
-It does NOT request Spotify.
-
-==================================================
-*/
+================================================== */
 
 setInterval(
     updateSpotify,
@@ -2595,14 +3627,7 @@ setInterval(
 
 /* ==================================================
    SMOOTH LYRIC CLOCK
-==================================================
-
-This runs locally in the browser.
-
-It does NOT contact Spotify.
-
-==================================================
-*/
+================================================== */
 
 function smoothUpdate() {
 
@@ -2631,5 +3656,4 @@ requestAnimationFrame(
 </script>
 
 </body>
-
 </html>
