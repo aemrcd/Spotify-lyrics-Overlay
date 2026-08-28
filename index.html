@@ -1,1348 +1,1499 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<meta charset="UTF-8">
+    <title>Spotify Lyrics Overlay</title>
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+    <style>
+        /* ==================================================
+           FONTS
+        ================================================== */
 
-<title>Spotify Lyrics Overlay</title>
-
-<style>
-
-/* ==================================================
-   FONTS
-================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@700&family=Spline+Sans:wght@700&display=swap');
-
-
-/* ==================================================
-   GLOBAL
-================================================== */
-
-* {
-    box-sizing: border-box;
-}
-
-html,
-body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-
-    background:
-        #07080b;
-
-    font-family:
-        "Spline Sans",
-        Arial,
-        Helvetica,
-        sans-serif;
-
-    color: white;
-
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-
-    text-rendering: optimizeLegibility;
-
-    cursor: none;
-}
-
-body {
-    transition:
-        background-color 1.2s ease;
-}
-
-#app {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-
-    background:
-        #07080b;
-
-    transition:
-        background 1.2s ease;
-}
-
-
-/* ==================================================
-   AMBIENT BACKGROUND
-================================================== */
-
-.ambient {
-    position: fixed;
-    inset: -25%;
-
-    pointer-events: none;
-    z-index: 0;
-
-    background:
-        radial-gradient(
-            circle at 25% 50%,
-            var(--ambient-color-soft),
-            transparent 35%
-        ),
-        radial-gradient(
-            circle at 75% 50%,
-            var(--ambient-color-faint),
-            transparent 40%
+        @import url(
+            'https://fonts.googleapis.com/css2?family=Sora:wght@700&family=Spline+Sans:wght@700&display=swap'
         );
 
-    filter:
-        blur(70px);
 
-    opacity: .75;
+        /* ==================================================
+           GLOBAL
+        ================================================== */
 
-    transition:
-        background 1.4s ease,
-        opacity 1.2s ease;
-}
+        * {
+            box-sizing: border-box;
+        }
 
-.ambient::after {
-    content: "";
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
 
-    position: absolute;
-    inset: 20%;
+            background: #07080b;
 
-    border-radius: 50%;
+            font-family:
+                "Spline Sans",
+                Arial,
+                Helvetica,
+                sans-serif;
 
-    background:
-        var(--ambient-color-center);
+            color: white;
 
-    filter:
-        blur(90px);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
 
-    opacity: .5;
-}
+            text-rendering: optimizeLegibility;
 
+            cursor: none;
+        }
 
-/* ==================================================
-   MAIN SCENE
-================================================== */
+        body {
+            transition:
+                background-color 1.2s ease;
+        }
 
-.scene {
-    position: relative;
-    z-index: 1;
+        #app {
+            position: fixed;
+            inset: 0;
 
-    width: 100%;
-    height: 100%;
+            overflow: hidden;
 
-    display: grid;
-    place-items: center;
+            background: #07080b;
 
-    padding: 30px;
-}
+            transition:
+                background 1.2s ease;
+        }
 
 
-/* ==================================================
-   GLASS CONTAINER
-================================================== */
+        /* ==================================================
+           AMBIENT BACKGROUND
+        ================================================== */
 
-.glass {
-    position: relative;
+        .ambient {
+            position: fixed;
+            inset: -25%;
 
-    width:
-        min(1180px, 94vw);
+            pointer-events: none;
 
-    min-height:
-        560px;
+            z-index: 0;
 
-    padding:
-        55px 70px;
+            background:
+                radial-gradient(
+                    circle at 25% 50%,
+                    var(--ambient-color-soft),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    circle at 75% 50%,
+                    var(--ambient-color-faint),
+                    transparent 40%
+                );
 
-    border-radius:
-        42px;
+            filter: blur(70px);
 
-    /*
-     * The glass uses a very dark version
-     * of the album color.
-     */
-    background:
-        linear-gradient(
-            135deg,
-            var(--glass-color-primary),
-            var(--glass-color-secondary)
-        );
+            opacity: .75;
 
-    /*
-     * Base border receives a subtle album tint.
-     */
-    border:
-        1px solid
-        var(--glass-border-color);
+            transition:
+                background 1.4s ease,
+                opacity 1.2s ease;
+        }
 
-    backdrop-filter:
-        blur(18px);
+        .ambient::after {
+            content: "";
 
-    -webkit-backdrop-filter:
-        blur(18px);
+            position: absolute;
+            inset: 20%;
 
-    box-shadow:
-        inset
-        0 1px
-        rgba(255, 255, 255, .055),
+            border-radius: 50%;
 
-        0 35px 100px
-        rgba(0, 0, 0, .45),
+            background:
+                var(--ambient-color-center);
 
-        /*
-         * Very subtle album-colored outer glow.
-         */
-        0 0 45px
-        var(--glass-outer-glow);
+            filter: blur(90px);
 
-    overflow:
-        hidden;
+            opacity: .5;
+        }
 
-    transition:
-        background 1.4s ease,
-        border-color 1.4s ease,
-        box-shadow 1.4s ease;
-}
 
+        /* ==================================================
+           MAIN SCENE
+        ================================================== */
 
-/* ==================================================
-   GLASS AMBIENT COLOR
-================================================== */
+        .scene {
+            position: relative;
 
-.glass::before {
-    content: "";
+            z-index: 1;
 
-    position: absolute;
+            width: 100%;
+            height: 100%;
 
-    width:
-        520px;
+            display: grid;
+            place-items: center;
 
-    height:
-        520px;
+            padding: 30px;
+        }
 
-    left:
-        24%;
 
-    top:
-        50%;
+        /* ==================================================
+           GLASS CONTAINER
+        ================================================== */
 
-    transform:
-        translate(
-            -50%,
-            -50%
-        );
+        .glass {
+            position: relative;
 
-    border-radius:
-        50%;
+            width:
+                min(1180px, 94vw);
 
-    background:
-        var(--ambient-color-glass);
+            min-height:
+                560px;
 
-    filter:
-        blur(90px);
+            padding:
+                55px 70px;
 
-    opacity:
-        .28;
+            border-radius:
+                42px;
 
-    pointer-events:
-        none;
-}
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--glass-color-primary),
+                    var(--glass-color-secondary)
+                );
 
+            border:
+                1px solid
+                var(--glass-border-color);
 
-/* ==================================================
-   GLASS BORDER TRACE
-================================================== */
+            backdrop-filter:
+                blur(18px);
 
-.glass::after {
-    content: "";
+            -webkit-backdrop-filter:
+                blur(18px);
 
-    position: absolute;
+            box-shadow:
+                inset
+                0 1px
+                rgba(255, 255, 255, .055),
 
-    inset: 0;
+                0 35px 100px
+                rgba(0, 0, 0, .45),
 
-    z-index: 1;
+                0 0 45px
+                var(--glass-outer-glow);
 
-    border-radius:
-        inherit;
+            overflow:
+                hidden;
 
-    padding:
-        1px;
+            transition:
+                background 1.4s ease,
+                border-color 1.4s ease,
+                box-shadow 1.4s ease;
+        }
 
-    /*
-     * The trace uses the album color.
-     *
-     * Most of the border remains invisible.
-     * A small colored section travels around
-     * the entire glass.
-     *
-     * The white portion creates a clean
-     * highlight at the leading edge.
-     */
-    background:
-        conic-gradient(
-            from var(--trace-angle),
 
-            transparent 0deg 315deg,
+        /* ==================================================
+           GLASS AMBIENT COLOR
+        ================================================== */
 
-            var(--glass-trace-soft) 330deg,
+        .glass::before {
+            content: "";
 
-            var(--glass-trace-medium) 342deg,
+            position: absolute;
 
-            var(--glass-trace-bright) 350deg,
+            width:
+                520px;
 
-            rgba(255, 255, 255, .95) 356deg,
+            height:
+                520px;
 
-            transparent 360deg
-        );
+            left:
+                24%;
 
-    /*
-     * Keep only the border visible.
-     */
-    -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
+            top:
+                50%;
 
-    -webkit-mask-composite:
-        xor;
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
 
-    mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
+            border-radius:
+                50%;
 
-    mask-composite:
-        exclude;
+            background:
+                var(--ambient-color-glass);
 
-    /*
-     * Colored glow + small white highlight.
-     */
-    filter:
-        drop-shadow(
-            0 0 4px
-            var(--glass-trace-glow)
-        )
-        drop-shadow(
-            0 0 10px
-            var(--glass-trace-glow)
-        );
+            filter:
+                blur(90px);
 
-    pointer-events:
-        none;
+            opacity:
+                .28;
 
-    animation:
-        traceBorder
-        8s
-        linear
-        infinite;
-}
+            pointer-events:
+                none;
+        }
 
 
-/* ==================================================
-   TRACE ANGLE
-================================================== */
+        /* ==================================================
+           GLASS BORDER TRACE
+        ================================================== */
 
-@property --trace-angle {
-    syntax: "<angle>";
-    inherits: false;
-    initial-value: 0deg;
-}
+        .glass::after {
+            content: "";
 
-@keyframes traceBorder {
+            position: absolute;
 
-    to {
-        --trace-angle:
-            360deg;
-    }
+            inset: 0;
 
-}
+            z-index: 1;
 
+            border-radius:
+                inherit;
 
-/* ==================================================
-   GLASS TOP HIGHLIGHT
-================================================== */
+            padding:
+                1px;
 
-.highlight {
-    position: absolute;
+            background:
+                conic-gradient(
+                    from var(--trace-angle),
 
-    top: 0;
-    left: 12%;
+                    transparent 0deg 315deg,
 
-    width: 76%;
-    height: 1px;
+                    var(--glass-trace-soft) 330deg,
 
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            rgba(255,255,255,.12),
-            transparent
-        );
-}
+                    var(--glass-trace-medium) 342deg,
 
+                    var(--glass-trace-bright) 350deg,
 
-/* ==================================================
-   CONTENT
-================================================== */
+                    rgba(255, 255, 255, .95) 356deg,
 
-.content {
-    position: relative;
-    z-index: 2;
+                    transparent 360deg
+                );
 
-    width: 100%;
+            -webkit-mask:
+                linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
 
-    min-height:
-        450px;
+            -webkit-mask-composite:
+                xor;
 
-    display: grid;
+            mask:
+                linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
 
-    grid-template-columns:
-        310px
-        minmax(0, 1fr);
+            mask-composite:
+                exclude;
 
-    align-items: center;
+            filter:
+                drop-shadow(
+                    0 0 4px
+                    var(--glass-trace-glow)
+                )
+                drop-shadow(
+                    0 0 10px
+                    var(--glass-trace-glow)
+                );
 
-    column-gap:
-        55px;
-}
+            pointer-events:
+                none;
 
+            animation:
+                traceBorder
+                8s
+                linear
+                infinite;
+        }
 
-/* ==================================================
-   VINYL SIDE
-================================================== */
 
-.vinyl-area {
-    
-    display: flex;
+        /* ==================================================
+           TRACE ANGLE
+        ================================================== */
 
-    flex-direction:
-        column;
+        @property --trace-angle {
+            syntax: "<angle>";
+            inherits: false;
+            initial-value: 0deg;
+        }
 
-    align-items:
-        center;
+        @keyframes traceBorder {
+            to {
+                --trace-angle:
+                    360deg;
+            }
+        }
 
-    justify-content:
-        center;
-    margin-left:
-        0;
 
-    perspective:
-        850px;
+        /* ==================================================
+           GLASS TOP HIGHLIGHT
+        ================================================== */
 
-    animation:
-        vinylFloat 6s ease-in-out infinite;
-}
+        .highlight {
+            position: absolute;
 
+            top: 0;
+            left: 12%;
 
-@keyframes vinylFloat {
+            width: 76%;
+            height: 1px;
 
-    0%,
-    100% {
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255,255,255,.12),
+                    transparent
+                );
+        }
 
-        transform:
-            translateY(0);
-    }
 
-    50% {
+        /* ==================================================
+           CONTENT
+        ================================================== */
 
-        transform:
-            translateY(-8px);
-    }
+        .content {
+            position: relative;
 
-}
+            z-index: 2;
 
+            width: 100%;
 
-/* ==================================================
-   VINYL
-================================================== */
+            min-height:
+                450px;
 
-.record {
-    position: relative;
+            display: grid;
 
-    width:
-        clamp(
-            210px,
-        34vw,
-            480px
-        );
-    margin-left:
-        35%;
+            grid-template-columns:
+                310px
+                minmax(0, 1fr);
 
-    transform-style:
-        preserve-3d;
+            align-items:
+                center;
 
-    transform:
-        rotateX(18deg)
-        rotateY(-20deg)
-        rotateZ(-8deg);
+            column-gap:
+                55px;
+        }
 
-    aspect-ratio: 1;
 
-    flex:
-        0 0 auto;
+        /* ==================================================
+           VINYL SIDE
+        ================================================== */
 
-    border-radius:
-        50%;
+        .vinyl-area {
+            display: flex;
 
-    background:
-        radial-gradient(
-            circle at 29% 22%,
-            rgba(255,255,255,.22),
-            transparent 16%
-        ),
+            flex-direction:
+                column;
 
-        radial-gradient(
-            circle at 70% 76%,
-            transparent 0 46%,
-            rgba(0,0,0,.72) 78%,
-            rgba(255,255,255,.10) 96%,
-            #08090b 100%
-        ),
+            align-items:
+                center;
 
-        repeating-radial-gradient(
-            circle,
-            #090a0c 0 1px,
-            #30343a 1.3px 1.8px,
-            #111317 2.2px 3.8px
-        ),
+            justify-content:
+                center;
 
-        #171a1e;
+            margin-left:
+                0;
 
-    animation:
-        spin
-        28s
-        linear
-        infinite;
-}
+            perspective:
+                850px;
 
+            animation:
+                vinylFloat
+                6s
+                ease-in-out
+                infinite;
+        }
 
-.record::before {
+        @keyframes vinylFloat {
+            0%,
+            100% {
+                transform:
+                    translateY(0);
+            }
 
-    content: "";
+            50% {
+                transform:
+                    translateY(-8px);
+            }
+        }
 
-    position: absolute;
 
-    inset:
-        -3%;
+        /* ==================================================
+           VINYL
+        ================================================== */
 
-    z-index: -1;
+        .record {
+            position: relative;
 
-    border-radius:
-        50%;
+            width:
+                clamp(
+                    210px,
+                    34vw,
+                    480px
+                );
 
-    border:
-        2px solid
-        var(--ambient-color-art);
+            margin-left:
+                35%;
 
-    box-shadow:
-        0 0 12px
-        var(--ambient-color-art),
+            transform-style:
+                preserve-3d;
 
-        inset 0 0 8px
-        rgba(255,255,255,.12);
+            transform:
+                rotateX(18deg)
+                rotateY(-20deg)
+                rotateZ(-8deg);
 
-    opacity:
-        .72;
+            aspect-ratio:
+                1;
 
-    pointer-events:
-        none;
-}
+            flex:
+                0 0 auto;
 
+            border-radius:
+                50%;
 
-/* ==================================================
-   VINYL EDGE
-================================================== */
+            background:
+                radial-gradient(
+                    circle at 29% 22%,
+                    rgba(255,255,255,.22),
+                    transparent 16%
+                ),
 
-.record::after {
-    content: "";
+                radial-gradient(
+                    circle at 70% 76%,
+                    transparent 0 46%,
+                    rgba(0,0,0,.72) 78%,
+                    rgba(255,255,255,.10) 96%,
+                    #08090b 100%
+                ),
 
-    position: absolute;
+                repeating-radial-gradient(
+                    circle,
+                    #090a0c 0 1px,
+                    #30343a 1.3px 1.8px,
+                    #111317 2.2px 3.8px
+                ),
 
-    inset: 2.5%;
+                #171a1e;
 
-    border-radius:
-        50%;
+            animation:
+                spin
+                28s
+                linear
+                infinite;
+        }
 
-    border:
-        1px solid
-        rgba(220,225,230,.32);
+        .record::before {
+            content: "";
 
-    box-shadow:
-        inset 0 0 10px
-        rgba(255,255,255,.13),
+            position: absolute;
 
-        0 0 8px
-        rgba(255,255,255,.10);
+            inset:
+                -3%;
 
-    pointer-events:
-        none;
-}
+            z-index:
+                -1;
 
+            border-radius:
+                50%;
 
-/* ==================================================
-   ALBUM ART
-================================================== */
+            border:
+                2px solid
+                var(--ambient-color-art);
 
-.album {
-    position: absolute;
+            box-shadow:
+                0 0 12px
+                var(--ambient-color-art),
 
-    inset:
-       13%;
+                inset 0 0 8px
+                rgba(255,255,255,.12);
 
-    border-radius:
-        50%;
+            opacity:
+                .72;
 
-    overflow:
-        hidden;
+            pointer-events:
+                none;
+        }
 
-    background:
-        linear-gradient(
-            135deg,
-            #25262a,
-            #111216
-        );
+        .record::after {
+            content: "";
 
-    box-shadow:
+            position: absolute;
 
-        0 0 0 1px
-        rgba(255,255,255,.16),
+            inset:
+                2.5%;
 
-        0 0 25px
-        var(--ambient-color-art),
+            border-radius:
+                50%;
 
-        inset
-        0 0 20px
-        rgba(0,0,0,.35);
+            border:
+                1px solid
+                rgba(220,225,230,.32);
 
-    transform:
-        translateZ(5px);
+            box-shadow:
+                inset 0 0 10px
+                rgba(255,255,255,.13),
 
-    transition:
-        box-shadow 1.2s ease;
-}
+                0 0 8px
+                rgba(255,255,255,.10);
 
+            pointer-events:
+                none;
+        }
 
-/* ==================================================
-   ALBUM ART IMAGE
-================================================== */
 
-#albumArt {
-    position: absolute;
+        /* ==================================================
+           ALBUM ART
+        ================================================== */
 
-    inset: 0;
+        .album {
+            position: absolute;
 
-    width: 100%;
-    height: 100%;
+            inset:
+                13%;
 
-    display: block;
+            border-radius:
+                50%;
 
-    object-fit: cover;
+            overflow:
+                hidden;
 
-    border-radius:
-        50%;
+            background:
+                linear-gradient(
+                    135deg,
+                    #25262a,
+                    #111216
+                );
 
-    opacity: 0;
+            box-shadow:
+                0 0 0 1px
+                rgba(255,255,255,.16),
 
-    transform:
-        scale(1.01);
+                0 0 25px
+                var(--ambient-color-art),
 
-    transition:
-        opacity .8s ease,
-        transform .8s ease;
-}
+                inset
+                0 0 20px
+                rgba(0,0,0,.35);
 
-#albumArt.loaded {
-    opacity: 1;
+            transform:
+                translateZ(5px);
 
-    transform:
-        scale(1);
-}
+            transition:
+                box-shadow 1.2s ease;
+        }
 
 
-/* ==================================================
-   ALBUM ART GLASS HIGHLIGHT
-================================================== */
+        /* ==================================================
+           ALBUM ART IMAGE
+        ================================================== */
 
-.album::after {
-    content: "";
+        #albumArt {
+            position: absolute;
 
-    position: absolute;
+            inset: 0;
 
-    inset: 0;
+            width: 100%;
+            height: 100%;
 
-    border-radius:
-        50%;
+            display: block;
 
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255,255,255,.24),
-            transparent 32%,
-            transparent 68%,
-            rgba(0,0,0,.18)
-        );
+            object-fit: cover;
 
-    mix-blend-mode:
-        screen;
+            border-radius:
+                50%;
 
-    pointer-events:
-        none;
-}
+            opacity: 0;
 
+            transform:
+                scale(1.01);
 
-/* ==================================================
-   VINYL CENTER HOLE
-================================================== */
+            transition:
+                opacity .8s ease,
+                transform .8s ease;
+        }
 
-.hole {
-    position: absolute;
+        #albumArt.loaded {
+            opacity: 1;
 
-    z-index: 5;
+            transform:
+                scale(1);
+        }
 
-    width:
-    30px;
 
-    height:
-        30px;
+        /* ==================================================
+           ALBUM ART GLASS HIGHLIGHT
+        ================================================== */
 
-    border-radius:
-        50%;
+        .album::after {
+            content: "";
 
-    left:
-        50%;
+            position: absolute;
 
-    top:
-        50%;
+            inset: 0;
 
-    transform:
-        translate(
-            -50%,
-            -50%
-        );
+            border-radius:
+                50%;
 
-background:
-    radial-gradient(
-        circle at center,
-        #bfc2c6 0 30%,
-        #5f6368 32% 100%
-    );
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(255,255,255,.24),
+                    transparent 32%,
+                    transparent 68%,
+                    rgba(0,0,0,.18)
+                );
 
-    box-shadow:
+            mix-blend-mode:
+                screen;
 
-        0 0 0 2px
-        rgba(0,0,0,.45),
+            pointer-events:
+                none;
+        }
 
-        0 0 7px
-        rgba(255,255,255,.15);
-}
 
+        /* ==================================================
+           VINYL CENTER HOLE
+        ================================================== */
 
-/* ==================================================
-   VINYL ROTATION
-================================================== */
+        .hole {
+            position: absolute;
 
-@keyframes spin {
+            z-index: 5;
 
-    from {
-        transform:
-            rotateX(18deg)
-            rotateY(-20deg)
-            rotateZ(-8deg);
-    }
+            width:
+                30px;
 
-    to {
-        transform:
-            rotateX(18deg)
-            rotateY(-20deg)
-            rotateZ(352deg);
-    }
+            height:
+                30px;
 
-}
+            border-radius:
+                50%;
 
+            left:
+                50%;
 
-/* ==================================================
-   NOW PLAYING
-================================================== */
+            top:
+                50%;
 
-.now-playing {
-    margin-bottom:
-        5px;
-}
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
 
-.now-playing h1 {
-    margin:
-        0;
+            background:
+                radial-gradient(
+                    circle at center,
+                    #bfc2c6 0 30%,
+                    #5f6368 32% 100%
+                );
 
-    text-align:
-        center;
-}
+            box-shadow:
+                0 0 0 2px
+                rgba(0,0,0,.45),
 
-.now-playing-label {
-    margin-bottom:
-        30px;
+                0 0 7px
+                rgba(255,255,255,.15);
+        }
 
-    margin-left:
-        40%;
 
-    font-family:
-        "Spline Sans",
-        sans-serif;
+        /* ==================================================
+           VINYL ROTATION
+        ================================================== */
 
-    font-size:
-        12px;
+        @keyframes spin {
+            from {
+                transform:
+                    rotateX(18deg)
+                    rotateY(-20deg)
+                    rotateZ(-8deg);
+            }
 
-    line-height:
-        1;
+            to {
+                transform:
+                    rotateX(18deg)
+                    rotateY(-20deg)
+                    rotateZ(352deg);
+            }
+        }
 
-    font-weight:
-        700;
 
-    letter-spacing:
-        .20em;
+        /* ==================================================
+           NOW PLAYING
+        ================================================== */
 
-    text-transform:
-        uppercase;
+        .now-playing {
+            margin-bottom:
+                24px;
 
-    color:
-        rgba(255,255,255,.46);
-}
+            text-align:
+                left;
 
+            width:
+                100%;
 
-/* ==================================================
-   SONG TITLE
-   SORA 700
-================================================== */
+            max-width:
+                560px;
+        }
 
-#title {
-    margin:
-        0;
+        .now-playing h1 {
+            margin:
+                0;
 
-    font-family:
-        "Sora",
-        Arial,
-        sans-serif;
+            text-align:
+                left;
+        }
 
-    font-size:
-        clamp(
-            38px,
-            4.2vw,
-            56px
-        );
+        .now-playing-label {
+            margin-bottom:
+                12px;
 
-    line-height:
-        1.08;
+            margin-left:
+                0;
 
-    font-weight:
-        700;
+            font-family:
+                "Spline Sans",
+                sans-serif;
 
-    letter-spacing:
-        -.03em;
+            font-size:
+                10px;
 
-    color:
-        rgba(255,255,255,.96);
+            line-height:
+                1.2;
 
-    text-shadow:
-        0 3px 12px
-        rgba(0,0,0,.50);
+            font-weight:
+                700;
 
-    transition:
-        opacity .35s ease,
-        transform .35s ease;
-}
+            letter-spacing:
+                .16em;
 
+            text-transform:
+                uppercase;
 
-/* ==================================================
-   LYRICS AREA
-================================================== */
+            color:
+                rgba(255,255,255,.38);
 
-.lyrics-area {
-    min-width:
-        0;
+            text-align:
+                left;
+        }
 
-    width:
-        100%;
 
-    display:
-        flex;
+        /* ==================================================
+           SONG TITLE
+        ================================================== */
 
-    flex-direction:
-        column;
+        #title {
+            margin:
+                0;
 
-    justify-content:
-        center;
-}
+            max-width:
+                560px;
 
+            font-family:
+                "Sora",
+                Arial,
+                sans-serif;
 
-/* ==================================================
-   LYRICS
-================================================== */
+            font-size:
+                clamp(
+                    50px,
+                    3.2vw,
+                    44px
+                );
 
-#overlay {
-    position: relative;
+            line-height:
+                1.12;
 
-    width: 100%;
+            font-weight:
+                700;
 
-    opacity: 0;
+            letter-spacing:
+                -.035em;
 
-    transition:
-        opacity .5s ease;
-}
+            color:
+                rgba(255,255,255,.90);
 
-#overlay.visible {
-    opacity: 1;
-}
+            text-align:
+                left;
 
-#overlay.harmonizing {
-    opacity: 0;
-}
+            text-wrap:
+                balance;
 
+            overflow-wrap:
+                anywhere;
 
-/* ==================================================
-   LYRICS VIEWPORT
-================================================== */
+            text-shadow:
+                none;
 
-.roller-viewport {
-    position: relative;
+            transition:
+                opacity .35s ease,
+                transform .35s ease;
+        }
 
-    width: 100%;
 
-    height:
-        320px;
+        /* ==================================================
+           LYRICS AREA
 
-    overflow:
-        hidden;
+           24% LEFT PADDING PRESERVED.
+        ================================================== */
 
-    -webkit-mask-image:
-        linear-gradient(
-            to bottom,
-            transparent 0%,
-            black 30%,
-            black 80%,
-            transparent 100%
-        );
+        .lyrics-area {
+            min-width:
+                0;
 
-    mask-image:
-        linear-gradient(
-            to bottom,
-            transparent 0%,
-            black 30%,
-            black 80%,
-            transparent 100%
-        );
-}
+            width:
+                100%;
 
-#lyrics {
-    position: absolute;
+            display:
+                flex;
 
-    left: 0;
-    right: 0;
-    top: 0;
+            flex-direction:
+                column;
 
-    transition:
-        transform .65s
-        cubic-bezier(
-            .22,
-            1,
-            .36,
-            1
-        );
-}
+            justify-content:
+                center;
 
+            align-items:
+                flex-start;
 
-/* ==================================================
-   LYRIC LINE
-================================================== */
+            margin-left:
+                0;
 
-.lyric-line {
-    height:
-        64px;
+            padding-left:
+                24%;
+        }
 
-    display:
-        flex;
 
-    align-items:
-        center;
+        /* ==================================================
+           LYRICS OVERLAY
+        ================================================== */
 
-    justify-content:
-        center;
+        #overlay {
+            position:
+                relative;
 
-    padding:
-        0 20px;
+            width:
+                100%;
 
-    font-family:
-        "Spline Sans",
-        Arial,
-        sans-serif;
+            max-width:
+                560px;
 
-    font-size:
-        29px;
+            opacity:
+                0;
 
-    line-height:
-        1.25;
+            transition:
+                opacity .5s ease;
+        }
 
-    font-weight:
-        700;
+        #overlay.visible {
+            opacity:
+                1;
+        }
 
-    color:
-        rgba(255,255,255,.35);
+        #overlay.harmonizing {
+            opacity:
+                0;
+        }
 
-    text-shadow:
-        0 2px 6px
-        rgba(0,0,0,.65);
 
-    transform:
-        none;
-}
+        /* ==================================================
+           LYRICS VIEWPORT
 
-.lyric-line .wave-char {
-    display:
-        inline-block;
+           Only the current lyric and the next two
+           lyrics are visually used.
 
-    position:
-        relative;
+           Previous lyrics are completely hidden.
+        ================================================== */
 
-    transform-origin:
-        center center;
+        .roller-viewport {
+            position:
+                relative;
 
-    will-change:
-        transform;
+            width:
+                100%;
 
-    backface-visibility:
-        hidden;
+            height:
+                340px;
 
-    -webkit-font-smoothing:
-        antialiased;
-}
+            overflow:
+                hidden;
 
+            -webkit-mask-image:
+                linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    black 12%,
+                    black 90%,
+                    transparent 100%
+                );
 
-/* ==================================================
-   CURRENT LINE
-================================================== */
+            mask-image:
+                linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    black 12%,
+                    black 90%,
+                    transparent 100%
+                );
+        }
 
-.lyric-line.current {
-    opacity:
-        1;
 
-    transform:
-        none;
+        /* ==================================================
+           LYRICS TRACK
+        ================================================== */
 
-    font-family:
-        "Spline Sans",
-        Arial,
-        sans-serif;
+        #lyrics {
+            position:
+                absolute;
 
-    font-size:
-        30px;
+            left:
+                0;
 
-    font-weight:
-        700;
+            right:
+                auto;
 
-    color:
-        white;
+            top:
+                0;
 
-    text-shadow:
-        0 2px 8px
-        rgba(0,0,0,.75);
-}
+            width:
+                100%;
 
-.lyric-line.current
-.wave-char {
-    color:
-        white;
+            transition:
+                transform .55s
+                cubic-bezier(
+                    .22,
+                    1,
+                    .36,
+                    1
+                );
 
-    -webkit-text-fill-color:
-        white;
-}
+            will-change:
+                transform;
+        }
 
 
-/* ==================================================
-   CHARACTER WAVE
-================================================== */
+        /* ==================================================
+           LYRIC LINE BASE
+        ================================================== */
 
-.lyric-line.current
-.wave-char.wave-active {
-    animation:
-        smoothLetterWave
-        .42s
-        cubic-bezier(
-            .25,
-            .8,
-            .25,
-            1
-        );
-}
+        .lyric-line {
+            width:
+                100%;
 
-@keyframes smoothLetterWave {
+            max-width:
+                560px;
 
-    0% {
-        transform:
-            scale(1);
-    }
+            display:
+                block;
 
-    35% {
-        transform:
-            scale(1.35);
-    }
+            overflow:
+                visible;
 
-    50% {
-        transform:
-            scale(1.42);
-    }
+            text-align:
+                left;
 
-    100% {
-        transform:
-            scale(1);
-    }
+            text-wrap:
+                pretty;
 
-}
+            overflow-wrap:
+                break-word;
 
+            font-family:
+                "Spline Sans",
+                Arial,
+                sans-serif;
 
-/* ==================================================
-   OTHER LINES
-================================================== */
+            font-size:
+                20px;
 
-.lyric-line.prev-2 {
-    opacity:
-        .12;
+            line-height:
+                1.25;
 
-    transform:
-        none;
-}
+            font-weight:
+                700;
 
-.lyric-line.prev-1 {
-    opacity:
-        .35;
+            letter-spacing:
+                -.012em;
 
-    transform:
-        none;
-}
+            color:
+                rgba(255,255,255,.10);
 
-.lyric-line.next-1 {
-    opacity:
-        .40;
+            text-shadow:
+                none;
 
-    transform:
-        none;
-}
+            transform:
+                none;
 
-.lyric-line.next-2 {
-    opacity:
-        .16;
+            opacity:
+                0;
 
-    transform:
-        none;
-}
+            /*
+               Important:
 
+               Lines that are not current or next
+               do not take up visual space.
+            */
 
-/* ==================================================
-   LOADING
-================================================== */
+            display:
+                none;
 
-#loading {
-    display:
-        none;
+            transition:
+                opacity .35s ease,
+                color .20s ease,
+                font-size .35s cubic-bezier(
+                    .22,
+                    1,
+                    .36,
+                    1
+                ),
+                line-height .35s ease,
+                margin .35s ease;
+        }
 
-    margin-top:
-        8px;
 
-    text-align:
-        center;
+        /* ==================================================
+           CURRENT LYRIC
 
-    font-family:
-        "Spline Sans",
-        sans-serif;
+           This is now the MAIN lyric position.
 
-    font-size:
-        14px;
+           Extra bottom margin creates clear separation
+           between the large current lyric and next lyric.
+        ================================================== */
 
-    color:
-        rgba(255,255,255,.45);
-}
+        .lyric-line.current {
+            display:
+                block;
 
+            opacity:
+                1;
 
-/* ==================================================
-   NO LYRICS
-================================================== */
+            font-size:
+                44px;
 
-#noLyrics {
-    display:
-        none;
+            line-height:
+                1.20;
 
-    text-align:
-        center;
+            font-weight:
+                700;
 
-    font-family:
-        "Spline Sans",
-        sans-serif;
+            letter-spacing:
+                -.014em;
 
-    font-size:
-        20px;
+            color:
+                rgba(255,255,255,.30);
 
-    color:
-        rgba(255,255,255,.5);
-}
+            background:
+                none;
 
+            /*
+               This creates the requested space below
+               the current lyric.
+            */
 
-/* ==================================================
-   SONG CHANGE
-================================================== */
+            margin-bottom:
+                38px;
 
-@keyframes songChange {
+            padding-bottom:
+                8px;
 
-    0% {
-        opacity:
-            0;
+            -webkit-text-fill-color:
+                initial;
+        }
 
-        transform:
-            translateY(15px);
-    }
 
-    100% {
-        opacity:
-            1;
+        /* ==================================================
+           NEXT LYRIC 1
 
-        transform:
-            translateY(0);
-    }
+           Immediately below current lyric.
+        ================================================== */
 
-}
+        .lyric-line.next-1 {
+            display:
+                block;
 
-.song-change {
-    animation:
-        songChange .7s
-        cubic-bezier(
-            .22,
-            1,
-            .36,
-            1
-        );
-}
+            opacity:
+                .16;
 
+            font-size:
+                22px;
 
-/* ==================================================
-   MOBILE
-================================================== */
+            line-height:
+                1.25;
 
-@media (max-width: 800px) {
+            margin-bottom:
+                28px;
 
-    .scene {
-        display:
-            flex;
+            color:
+                rgba(255,255,255,.22);
 
-        flex-direction:
-            column;
+            transform:
+                none;
+        }
 
-        justify-content:
-            flex-start;
 
-        overflow-y:
-            auto;
+        /* ==================================================
+           NEXT LYRIC 2
 
-        gap:
-            20px;
+           Further below next lyric 1.
+        ================================================== */
 
-        width:
-            100%;
+        .lyric-line.next-2 {
+            display:
+                block;
 
-        padding:
-            16px;
-    }
+            opacity:
+                .08;
 
-    .glass {
-        width:
-            95vw;
+            font-size:
+                20px;
 
-        min-height:
-            250px;
+            line-height:
+                1.25;
 
-        padding:
-            42px 25px;
+            margin-bottom:
+                0;
 
-        border-radius:
-            32px;
-    }
+            color:
+                rgba(255,255,255,.14);
 
-    .content {
-        min-height:
-            250px;
-    }
+            transform:
+                none;
+        }
 
-    .record {
-        width:
-            175px;
-    }
 
-    .vinyl-area {
-        order:
-            1;
-    }
+        /* ==================================================
+           HIDDEN LINES
 
-    .lyrics-area {
-        width:
-            95vw;
+           Previous lyrics and all lines outside the
+           visible 3-line window are completely removed
+           from layout.
+        ================================================== */
 
-        order:
-            2;
-    }
+        .lyric-line.hidden,
+        .lyric-line.prev-1,
+        .lyric-line.prev-2 {
+            display:
+                none;
 
-    .now-playing {
-        margin-bottom:
-            20px;
+            opacity:
+                0;
 
-        text-align:
-            center;
-    }
+            visibility:
+                hidden;
 
-    .now-playing-label {
-        margin-left:
-            0;
-    }
+            pointer-events:
+                none;
 
-    #title {
-        font-size:
-            34px;
-    }
+            height:
+                0;
 
-    .lyric-line {
-        font-size:
-            22px;
-    }
+            margin:
+                0;
 
-    .lyric-line.current {
-        font-size:
-            23px;
-    }
+            padding:
+                0;
+        }
 
-}
 
+        /* ==================================================
+           KARAOKE SENTENCES
+        ================================================== */
 
-/* ==================================================
-   VERY SMALL SCREENS
-================================================== */
+        .lyric-sentence {
+            display:
+                inline;
+        }
 
-@media (max-width: 500px) {
 
-    .glass {
-        padding:
-            30px 18px;
-    }
+        /* ==================================================
+           KARAOKE WORDS
+        ================================================== */
 
-    .record {
-        width:
-            145px;
-    }
+        .lyric-word {
+            display:
+                inline;
 
-    #title {
-        font-size:
-            28px;
-    }
+            color:
+                rgba(255,255,255,.30);
 
-}
+            transition:
+                color .14s linear,
+                opacity .14s linear;
+        }
 
-</style>
+        .lyric-word.active {
+            color:
+                rgba(255,255,255,.99);
+        }
 
+
+        /* ==================================================
+           LOADING
+        ================================================== */
+
+        #loading {
+            display:
+                none;
+
+            margin-top:
+                8px;
+
+            text-align:
+                left;
+
+            font-family:
+                "Spline Sans",
+                sans-serif;
+
+            font-size:
+                14px;
+
+            color:
+                rgba(255,255,255,.45);
+        }
+
+
+        /* ==================================================
+           NO LYRICS
+        ================================================== */
+
+        #noLyrics {
+            display:
+                none;
+
+            text-align:
+                left;
+
+            font-family:
+                "Spline Sans",
+                sans-serif;
+
+            font-size:
+                20px;
+
+            color:
+                rgba(255,255,255,.5);
+        }
+
+
+        /* ==================================================
+           SONG CHANGE
+        ================================================== */
+
+        @keyframes songChange {
+            0% {
+                opacity:
+                    0;
+
+                transform:
+                    translateY(15px);
+            }
+
+            100% {
+                opacity:
+                    1;
+
+                transform:
+                    translateY(0);
+            }
+        }
+
+        .song-change {
+            animation:
+                songChange .7s
+                cubic-bezier(
+                    .22,
+                    1,
+                    .36,
+                    1
+                );
+        }
+
+
+        /* ==================================================
+           MOBILE
+        ================================================== */
+
+        @media (max-width: 800px) {
+
+            .scene {
+                display:
+                    flex;
+
+                flex-direction:
+                    column;
+
+                justify-content:
+                    flex-start;
+
+                overflow-y:
+                    auto;
+
+                gap:
+                    20px;
+
+                width:
+                    100%;
+
+                padding:
+                    16px;
+            }
+
+            .glass {
+                width:
+                    95vw;
+
+                min-height:
+                    250px;
+
+                padding:
+                    42px 25px;
+
+                border-radius:
+                    32px;
+            }
+
+            .content {
+                min-height:
+                    250px;
+            }
+
+            .record {
+                width:
+                    175px;
+            }
+
+            .vinyl-area {
+                order:
+                    1;
+            }
+
+            .lyrics-area {
+                width:
+                    100%;
+
+                order:
+                    2;
+
+                padding-left:
+                    0;
+            }
+
+            .now-playing {
+                margin-bottom:
+                    20px;
+
+                text-align:
+                    left;
+
+                max-width:
+                    100%;
+            }
+
+            .now-playing-label {
+                margin-left:
+                    0;
+            }
+
+            #title {
+                font-size:
+                    50px;
+
+                max-width:
+                    100%;
+            }
+
+            .roller-viewport {
+                height:
+                    270px;
+            }
+
+            .lyric-line.current {
+                font-size:
+                    25px;
+
+                line-height:
+                    1.2;
+
+                margin-bottom:
+                    28px;
+
+                padding-bottom:
+                    6px;
+            }
+
+            .lyric-line.next-1 {
+                font-size:
+                    19px;
+
+                margin-bottom:
+                    22px;
+            }
+
+            .lyric-line.next-2 {
+                font-size:
+                    18px;
+            }
+        }
+
+
+        /* ==================================================
+           VERY SMALL SCREENS
+        ================================================== */
+
+        @media (max-width: 500px) {
+
+            .glass {
+                padding:
+                    30px 18px;
+            }
+
+            .record {
+                width:
+                    145px;
+            }
+
+            #title {
+                font-size:
+                    27px;
+            }
+
+            .roller-viewport {
+                height:
+                    240px;
+            }
+
+            .lyric-line.current {
+                font-size:
+                    22px;
+
+                margin-bottom:
+                    24px;
+
+                padding-bottom:
+                    5px;
+            }
+
+            .lyric-line.next-1 {
+                font-size:
+                    18px;
+
+                margin-bottom:
+                    18px;
+            }
+
+            .lyric-line.next-2 {
+                font-size:
+                    17px;
+            }
+        }
+    </style>
 </head>
 
 
@@ -1413,7 +1564,7 @@ background:
                         <div
                             class="now-playing-label"
                         >
-                            -- Now Playing --
+                            Now Playing
                         </div>
 
 
@@ -1430,9 +1581,13 @@ background:
 
                     <div id="overlay">
 
-                        <div class="roller-viewport">
+                        <div
+                            class="roller-viewport"
+                        >
 
-                            <div id="lyrics"></div>
+                            <div
+                                id="lyrics"
+                            ></div>
 
                         </div>
 
@@ -1461,316 +1616,635 @@ background:
 
 <script>
 
-/* ==================================================
-   STATE
-================================================== */
+    /* ==================================================
+       STATE
+    ================================================== */
 
-let currentTrackId =
-    null;
+    let currentTrackId = null;
 
-let currentLyrics =
-    [];
+    let currentLyrics = [];
 
-let lineElements =
-    [];
+    let lineElements = [];
 
-let lastServerPosition =
-    0;
+    let lastServerPosition = 0;
 
-let lastServerSyncTime =
-    0;
+    let lastServerSyncTime = 0;
 
-let lastLyricIndex =
-    undefined;
+    let lastLyricIndex = undefined;
 
-let lyricsRequestTrack =
-    null;
+    let lyricsRequestTrack = null;
 
-let harmonizing =
-    false;
+    let lyricsRequestVersion = 0;
 
-let lastTransition =
-    null;
+    let harmonizing = false;
 
-let currentAlbumArt =
-    null;
+    let lastTransition = null;
+
+    let currentAlbumArt = null;
+
+    let isPlaybackActive = false;
 
 
-/* ==================================================
-   SETTINGS
-================================================== */
+    /* ==================================================
+       SETTINGS
+    ================================================== */
 
-const ROW_HEIGHT =
-    64;
+    /*
+       Height used by the JavaScript positioning system.
 
-const WAVE_DURATION =
-    420;
+       The visual layout is now:
 
-const WAVE_DELAY =
-    70;
+       CURRENT
+          ↓
+       NEXT 1
+          ↓
+       NEXT 2
+    */
 
-const WAVE_PAUSE =
-    500;
+    const CURRENT_OFFSET = 0;
 
-const WAVE_DELAY_MIN =
-    25;
+    const NEXT_1_OFFSET = 1;
 
-const WAVE_DELAY_MAX =
-    100;
-
-const HARMONIZE_HIDE_TIME =
-    900;
+    const NEXT_2_OFFSET = 2;
 
 
-/* ==================================================
-   ELEMENTS
-================================================== */
-
-const overlay =
-    document.getElementById(
-        "overlay"
-    );
-
-const titleElement =
-    document.getElementById(
-        "title"
-    );
-
-const lyricsElement =
-    document.getElementById(
-        "lyrics"
-    );
-
-const loadingElement =
-    document.getElementById(
-        "loading"
-    );
-
-const noLyricsElement =
-    document.getElementById(
-        "noLyrics"
-    );
-
-const albumArtElement =
-    document.getElementById(
-        "albumArt"
-    );
-
-const ambientElement =
-    document.getElementById(
-        "ambient"
-    );
-
-
-/* ==================================================
-   DEFAULT AMBIENT
-================================================== */
-
-function setDefaultAmbient() {
-
-    document.documentElement.style.setProperty(
-        "--ambient-color-soft",
-        "rgba(95, 105, 125, .12)"
-    );
-
-    document.documentElement.style.setProperty(
-        "--ambient-color-faint",
-        "rgba(75, 85, 105, .08)"
-    );
-
-    document.documentElement.style.setProperty(
-        "--ambient-color-center",
-        "rgba(100, 110, 130, .05)"
-    );
-
-    document.documentElement.style.setProperty(
-        "--ambient-color-glass",
-        "rgba(90, 100, 120, .10)"
-    );
-
-    document.documentElement.style.setProperty(
-        "--ambient-color-art",
-        "rgba(100, 110, 130, .12)"
-    );
+    const HARMONIZE_HIDE_TIME = 900;
 
 
     /*
-     * Default glass colors.
-     */
-    document.documentElement.style.setProperty(
-        "--glass-color-primary",
-        "rgba(12, 13, 17, .32)"
-    );
+       Small anticipation compensates for:
 
-    document.documentElement.style.setProperty(
-        "--glass-color-secondary",
-        "rgba(12, 13, 17, .22)"
-    );
+       - browser rendering latency
+       - Spotify position sampling
+       - animation/rendering delay
 
+       Keep this small.
+    */
 
-    /*
-     * Default border.
-     */
-    document.documentElement.style.setProperty(
-        "--glass-border-color",
-        "rgba(255, 255, 255, .075)"
-    );
+    const KARAOKE_LEAD = 70;
 
 
-    /*
-     * Default trace.
-     */
-    document.documentElement.style.setProperty(
-        "--glass-trace-soft",
-        "rgba(255, 255, 255, .08)"
-    );
+    /* ==================================================
+       ELEMENTS
+    ================================================== */
 
-    document.documentElement.style.setProperty(
-        "--glass-trace-medium",
-        "rgba(255, 255, 255, .22)"
-    );
+    const overlay =
+        document.getElementById(
+            "overlay"
+        );
 
-    document.documentElement.style.setProperty(
-        "--glass-trace-bright",
-        "rgba(255, 255, 255, .55)"
-    );
+    const titleElement =
+        document.getElementById(
+            "title"
+        );
 
-    document.documentElement.style.setProperty(
-        "--glass-trace-glow",
-        "rgba(255, 255, 255, .25)"
-    );
+    const lyricsElement =
+        document.getElementById(
+            "lyrics"
+        );
 
-    document.documentElement.style.setProperty(
-        "--glass-outer-glow",
-        "rgba(255, 255, 255, .015)"
-    );
-}
+    const loadingElement =
+        document.getElementById(
+            "loading"
+        );
 
-setDefaultAmbient();
+    const noLyricsElement =
+        document.getElementById(
+            "noLyrics"
+        );
 
+    const albumArtElement =
+        document.getElementById(
+            "albumArt"
+        );
 
-/* ==================================================
-   ALBUM COLOR
-================================================== */
-
-function updateAmbientFromImage(
-    image
-) {
-
-    try {
-
-        const canvas =
-            document.createElement(
-                "canvas"
-            );
-
-        const context =
-            canvas.getContext(
-                "2d",
-                {
-                    willReadFrequently:
-                        true
-                }
-            );
-
-        const sampleSize =
-            32;
-
-        canvas.width =
-            sampleSize;
-
-        canvas.height =
-            sampleSize;
-
-
-        context.drawImage(
-            image,
-            0,
-            0,
-            sampleSize,
-            sampleSize
+    const ambientElement =
+        document.getElementById(
+            "ambient"
         );
 
 
-        const pixels =
-            context.getImageData(
+    /* ==================================================
+       DEFAULT AMBIENT
+    ================================================== */
+
+    function setDefaultAmbient() {
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-soft",
+            "rgba(95, 105, 125, .12)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-faint",
+            "rgba(75, 85, 105, .08)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-center",
+            "rgba(100, 110, 130, .05)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-glass",
+            "rgba(90, 100, 120, .10)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--ambient-color-art",
+            "rgba(100, 110, 130, .12)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-color-primary",
+            "rgba(12, 13, 17, .32)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-color-secondary",
+            "rgba(12, 13, 17, .22)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-border-color",
+            "rgba(255, 255, 255, .075)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-soft",
+            "rgba(255, 255, 255, .08)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-medium",
+            "rgba(255, 255, 255, .22)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-bright",
+            "rgba(255, 255, 255, .55)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-trace-glow",
+            "rgba(255, 255, 255, .25)"
+        );
+
+        document.documentElement.style.setProperty(
+            "--glass-outer-glow",
+            "rgba(255, 255, 255, .015)"
+        );
+    }
+
+    setDefaultAmbient();
+
+
+    /* ==================================================
+       ALBUM COLOR
+    ================================================== */
+
+    function updateAmbientFromImage(image) {
+
+        try {
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+            const context =
+                canvas.getContext(
+                    "2d",
+                    {
+                        willReadFrequently:
+                            true
+                    }
+                );
+
+            const sampleSize = 32;
+
+            canvas.width =
+                sampleSize;
+
+            canvas.height =
+                sampleSize;
+
+
+            context.drawImage(
+                image,
                 0,
                 0,
                 sampleSize,
                 sampleSize
-            ).data;
+            );
 
 
-        let red =
-            0;
-
-        let green =
-            0;
-
-        let blue =
-            0;
-
-        let count =
-            0;
+            const pixels =
+                context.getImageData(
+                    0,
+                    0,
+                    sampleSize,
+                    sampleSize
+                ).data;
 
 
-        for (
-            let i = 0;
-            i < pixels.length;
-            i += 4
-        ) {
+            let red = 0;
 
-            const r =
-                pixels[i];
+            let green = 0;
 
-            const g =
-                pixels[i + 1];
+            let blue = 0;
 
-            const b =
-                pixels[i + 2];
-
-            const alpha =
-                pixels[i + 3];
+            let count = 0;
 
 
-            if (
-                alpha < 40
+            for (
+                let i = 0;
+                i < pixels.length;
+                i += 4
             ) {
-                continue;
+
+                const r =
+                    pixels[i];
+
+                const g =
+                    pixels[i + 1];
+
+                const b =
+                    pixels[i + 2];
+
+                const alpha =
+                    pixels[i + 3];
+
+
+                if (
+                    alpha < 40
+                ) {
+                    continue;
+                }
+
+
+                const brightness =
+                    (
+                        r +
+                        g +
+                        b
+                    ) / 3;
+
+
+                if (
+                    brightness < 18
+                ) {
+                    continue;
+                }
+
+
+                red += r;
+
+                green += g;
+
+                blue += b;
+
+                count++;
             }
 
 
-            const brightness =
-                (
-                    r +
-                    g +
-                    b
-                ) / 3;
-
-
             if (
-                brightness < 18
+                count === 0
             ) {
-                continue;
+
+                setDefaultAmbient();
+
+                return;
             }
 
 
-            red +=
-                r;
+            red =
+                Math.round(
+                    red / count
+                );
 
-            green +=
-                g;
+            green =
+                Math.round(
+                    green / count
+                );
 
-            blue +=
-                b;
+            blue =
+                Math.round(
+                    blue / count
+                );
 
-            count++;
+
+            const hsl =
+                rgbToHsl(
+                    red,
+                    green,
+                    blue
+                );
+
+
+            const safeSaturation =
+                Math.min(
+                    Math.max(
+                        hsl.s,
+                        18
+                    ),
+                    38
+                );
+
+
+            const safeLightness =
+                Math.min(
+                    Math.max(
+                        hsl.l,
+                        22
+                    ),
+                    36
+                );
+
+
+            const safeColor =
+                `hsl(${hsl.h} ${safeSaturation}% ${safeLightness}%)`;
+
+
+            const softColor =
+                `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .105)`;
+
+            const faintColor =
+                `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .055)`;
+
+            const centerColor =
+                `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .035)`;
+
+            const glassColor =
+                `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .065)`;
+
+            const artColor =
+                `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness + 3}%, .17)`;
+
+
+            document.documentElement.style.setProperty(
+                "--ambient-color-soft",
+                softColor
+            );
+
+            document.documentElement.style.setProperty(
+                "--ambient-color-faint",
+                faintColor
+            );
+
+            document.documentElement.style.setProperty(
+                "--ambient-color-center",
+                centerColor
+            );
+
+            document.documentElement.style.setProperty(
+                "--ambient-color-glass",
+                glassColor
+            );
+
+            document.documentElement.style.setProperty(
+                "--ambient-color-art",
+                artColor
+            );
+
+
+            const glassPrimary =
+                `hsla(${hsl.h}, ${safeSaturation}%, 9%, .72)`;
+
+            const glassSecondary =
+                `hsla(${hsl.h}, ${safeSaturation}%, 5%, .84)`;
+
+
+            document.documentElement.style.setProperty(
+                "--glass-color-primary",
+                glassPrimary
+            );
+
+            document.documentElement.style.setProperty(
+                "--glass-color-secondary",
+                glassSecondary
+            );
+
+
+            const glassBorderColor =
+                `hsla(${hsl.h}, ${safeSaturation}%, 62%, .16)`;
+
+
+            document.documentElement.style.setProperty(
+                "--glass-border-color",
+                glassBorderColor
+            );
+
+
+            const traceSoft =
+                `hsla(${hsl.h}, ${safeSaturation}%, 60%, .10)`;
+
+            const traceMedium =
+                `hsla(${hsl.h}, ${safeSaturation}%, 68%, .38)`;
+
+            const traceBright =
+                `hsla(${hsl.h}, ${safeSaturation}%, 78%, .82)`;
+
+            const traceGlow =
+                `hsla(${hsl.h}, ${safeSaturation}%, 65%, .42)`;
+
+
+            document.documentElement.style.setProperty(
+                "--glass-trace-soft",
+                traceSoft
+            );
+
+            document.documentElement.style.setProperty(
+                "--glass-trace-medium",
+                traceMedium
+            );
+
+            document.documentElement.style.setProperty(
+                "--glass-trace-bright",
+                traceBright
+            );
+
+            document.documentElement.style.setProperty(
+                "--glass-trace-glow",
+                traceGlow
+            );
+
+
+            const outerGlow =
+                `hsla(${hsl.h}, ${safeSaturation}%, 35%, .055)`;
+
+
+            document.documentElement.style.setProperty(
+                "--glass-outer-glow",
+                outerGlow
+            );
+
+
+            console.log(
+                "Album color:",
+                safeColor
+            );
+
         }
+        catch (error) {
+
+            console.warn(
+                "Could not extract album color:",
+                error.message
+            );
+        }
+    }
+
+
+    /* ==================================================
+       RGB → HSL
+    ================================================== */
+
+    function rgbToHsl(r, g, b) {
+
+        r /= 255;
+
+        g /= 255;
+
+        b /= 255;
+
+
+        const max =
+            Math.max(
+                r,
+                g,
+                b
+            );
+
+        const min =
+            Math.min(
+                r,
+                g,
+                b
+            );
+
+
+        let h = 0;
+
+        let s = 0;
+
+
+        const l =
+            (
+                max +
+                min
+            ) / 2;
 
 
         if (
-            count === 0
+            max !== min
         ) {
+
+            const d =
+                max -
+                min;
+
+
+            s =
+                l > .5
+                    ? d /
+                        (
+                            2 -
+                            max -
+                            min
+                        )
+                    : d /
+                        (
+                            max +
+                            min
+                        );
+
+
+            switch (max) {
+
+                case r:
+
+                    h =
+                        (
+                            g -
+                            b
+                        ) / d +
+                        (
+                            g < b
+                                ? 6
+                                : 0
+                        );
+
+                    break;
+
+
+                case g:
+
+                    h =
+                        (
+                            b -
+                            r
+                        ) / d +
+                        2;
+
+                    break;
+
+
+                case b:
+
+                    h =
+                        (
+                            r -
+                            g
+                        ) / d +
+                        4;
+
+                    break;
+            }
+
+
+            h /= 6;
+        }
+
+
+        return {
+
+            h:
+                Math.round(
+                    h * 360
+                ),
+
+            s:
+                Math.round(
+                    s * 100
+                ),
+
+            l:
+                Math.round(
+                    l * 100
+                )
+        };
+    }
+
+
+    /* ==================================================
+       LOAD ALBUM ART
+    ================================================== */
+
+    function loadAlbumArt(url) {
+
+        if (!url) {
+
+            albumArtElement.classList.remove(
+                "loaded"
+            );
+
+            albumArtElement.removeAttribute(
+                "src"
+            );
+
+            currentAlbumArt =
+                null;
 
             setDefaultAmbient();
 
@@ -1778,1867 +2252,1756 @@ function updateAmbientFromImage(
         }
 
 
-        red =
-            Math.round(
-                red / count
-            );
-
-        green =
-            Math.round(
-                green / count
-            );
-
-        blue =
-            Math.round(
-                blue / count
-            );
-
-
-        const hsl =
-            rgbToHsl(
-                red,
-                green,
-                blue
-            );
-
-
-        /*
-         * ==========================================
-         * SAFE ALBUM COLOR
-         * ==========================================
-         *
-         * Keep the background restrained.
-         *
-         * Saturation:
-         * 18% → 38%
-         *
-         * Lightness:
-         * 22% → 36%
-         */
-
-        const safeSaturation =
-            Math.min(
-                Math.max(
-                    hsl.s,
-                    18
-                ),
-                38
-            );
-
-
-        const safeLightness =
-            Math.min(
-                Math.max(
-                    hsl.l,
-                    22
-                ),
-                36
-            );
-
-
-        const safeColor =
-            `hsl(${hsl.h} ${safeSaturation}% ${safeLightness}%)`;
-
-
-        /* ==================================================
-           AMBIENT COLORS
-        ================================================== */
-
-        const softColor =
-            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .105)`;
-
-
-        const faintColor =
-            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .055)`;
-
-
-        const centerColor =
-            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .035)`;
-
-
-        const glassColor =
-            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness}%, .065)`;
-
-
-        const artColor =
-            `hsla(${hsl.h}, ${safeSaturation}%, ${safeLightness + 3}%, .17)`;
-
-
-        document.documentElement.style.setProperty(
-            "--ambient-color-soft",
-            softColor
-        );
-
-        document.documentElement.style.setProperty(
-            "--ambient-color-faint",
-            faintColor
-        );
-
-        document.documentElement.style.setProperty(
-            "--ambient-color-center",
-            centerColor
-        );
-
-        document.documentElement.style.setProperty(
-            "--ambient-color-glass",
-            glassColor
-        );
-
-        document.documentElement.style.setProperty(
-            "--ambient-color-art",
-            artColor
-        );
-
-
-        /* ==================================================
-           GLASS COLOR
-        ================================================== */
-
-        /*
-         * Very dark album-colored glass.
-         *
-         * The color is intentionally kept dark
-         * so the lyrics remain the visual focus.
-         */
-
-        const glassPrimary =
-            `hsla(${hsl.h}, ${safeSaturation}%, 9%, .72)`;
-
-
-        const glassSecondary =
-            `hsla(${hsl.h}, ${safeSaturation}%, 5%, .84)`;
-
-
-        document.documentElement.style.setProperty(
-            "--glass-color-primary",
-            glassPrimary
-        );
-
-        document.documentElement.style.setProperty(
-            "--glass-color-secondary",
-            glassSecondary
-        );
-
-
-        /* ==================================================
-           GLASS BORDER COLOR
-        ================================================== */
-
-        /*
-         * The static border receives a subtle version
-         * of the album color.
-         */
-
-        const glassBorderColor =
-            `hsla(${hsl.h}, ${safeSaturation}%, 62%, .16)`;
-
-
-        document.documentElement.style.setProperty(
-            "--glass-border-color",
-            glassBorderColor
-        );
-
-
-        /* ==================================================
-           TRAVELING BORDER TRACE
-        ================================================== */
-
-        /*
-         * Soft colored part of the trace.
-         */
-
-        const traceSoft =
-            `hsla(${hsl.h}, ${safeSaturation}%, 60%, .10)`;
-
-
-        /*
-         * Main colored part.
-         */
-
-        const traceMedium =
-            `hsla(${hsl.h}, ${safeSaturation}%, 68%, .38)`;
-
-
-        /*
-         * Bright leading section.
-         */
-
-        const traceBright =
-            `hsla(${hsl.h}, ${safeSaturation}%, 78%, .82)`;
-
-
-        /*
-         * Glow surrounding the trace.
-         */
-
-        const traceGlow =
-            `hsla(${hsl.h}, ${safeSaturation}%, 65%, .42)`;
-
-
-        document.documentElement.style.setProperty(
-            "--glass-trace-soft",
-            traceSoft
-        );
-
-        document.documentElement.style.setProperty(
-            "--glass-trace-medium",
-            traceMedium
-        );
-
-        document.documentElement.style.setProperty(
-            "--glass-trace-bright",
-            traceBright
-        );
-
-        document.documentElement.style.setProperty(
-            "--glass-trace-glow",
-            traceGlow
-        );
-
-
-        /* ==================================================
-           OUTER GLASS GLOW
-        ================================================== */
-
-        const outerGlow =
-            `hsla(${hsl.h}, ${safeSaturation}%, 35%, .055)`;
-
-
-        document.documentElement.style.setProperty(
-            "--glass-outer-glow",
-            outerGlow
-        );
-
-
-        console.log(
-            "Album color:",
-            safeColor
-        );
-
-    }
-
-    catch (error) {
-
-        /*
-         * IMPORTANT:
-         *
-         * A canvas/CORS failure must NOT
-         * prevent album artwork from displaying.
-         *
-         * We simply keep the previous/default
-         * ambient and glass colors.
-         */
-
-        console.warn(
-            "Could not extract album color:",
-            error.message
-        );
-    }
-}
-
-
-/* ==================================================
-   RGB → HSL
-================================================== */
-
-function rgbToHsl(
-    r,
-    g,
-    b
-) {
-
-    r /= 255;
-    g /= 255;
-    b /= 255;
-
-
-    const max =
-        Math.max(
-            r,
-            g,
-            b
-        );
-
-
-    const min =
-        Math.min(
-            r,
-            g,
-            b
-        );
-
-
-    let h =
-        0;
-
-    let s =
-        0;
-
-
-    const l =
-        (
-            max +
-            min
-        ) / 2;
-
-
-    if (
-        max !== min
-    ) {
-
-        const d =
-            max -
-            min;
-
-
-        s =
-            l > .5
-                ? d /
-                    (
-                        2 -
-                        max -
-                        min
-                    )
-                : d /
-                    (
-                        max +
-                        min
-                    );
-
-
-        switch (
-            max
+        if (
+            currentAlbumArt ===
+            url
         ) {
-
-            case r:
-
-                h =
-                    (
-                        g -
-                        b
-                    ) / d +
-                    (
-                        g < b
-                            ? 6
-                            : 0
-                    );
-
-                break;
-
-
-            case g:
-
-                h =
-                    (
-                        b -
-                        r
-                    ) / d +
-                    2;
-
-                break;
-
-
-            case b:
-
-                h =
-                    (
-                        r -
-                        g
-                    ) / d +
-                    4;
-
-                break;
+            return;
         }
 
 
-        h /=
-            6;
-    }
+        currentAlbumArt =
+            url;
 
-
-    return {
-
-        h:
-            Math.round(
-                h * 360
-            ),
-
-        s:
-            Math.round(
-                s * 100
-            ),
-
-        l:
-            Math.round(
-                l * 100
-            )
-    };
-}
-
-
-/* ==================================================
-   LOAD ALBUM ART
-================================================== */
-
-function loadAlbumArt(
-    url
-) {
-
-    if (
-        !url
-    ) {
 
         albumArtElement.classList.remove(
             "loaded"
         );
 
-        albumArtElement.removeAttribute(
-            "src"
-        );
 
-        currentAlbumArt =
-            null;
+        albumArtElement.src =
+            url;
 
-        setDefaultAmbient();
 
-        return;
-    }
+        albumArtElement.onload =
+            () => {
 
-
-    if (
-        currentAlbumArt ===
-        url
-    ) {
-        return;
-    }
-
-
-    currentAlbumArt =
-        url;
-
-
-    /*
-     * ==============================================
-     * IMPORTANT ALBUM ART FIX
-     * ==============================================
-     *
-     * Set the visible image FIRST.
-     *
-     * Do not wait for canvas color extraction.
-     *
-     * This guarantees the Spotify artwork
-     * appears even if Spotify's CDN does not
-     * allow canvas pixel access.
-     */
-
-    albumArtElement.classList.remove(
-        "loaded"
-    );
-
-
-    albumArtElement.src =
-        url;
-
-
-    albumArtElement.onload =
-        () => {
-
-            albumArtElement.classList.add(
-                "loaded"
-            );
-        };
-
-
-    albumArtElement.onerror =
-        () => {
-
-            console.warn(
-                "Album artwork could not be loaded:",
-                url
-            );
-
-            albumArtElement.classList.remove(
-                "loaded"
-            );
-        };
-
-
-    /*
-     * ==============================================
-     * COLOR EXTRACTION
-     * ==============================================
-     *
-     * This is completely separate from
-     * displaying the artwork.
-     */
-
-    const image =
-        new Image();
-
-
-    image.crossOrigin =
-        "anonymous";
-
-
-    image.onload =
-        () => {
-
-            updateAmbientFromImage(
-                image
-            );
-        };
-
-
-    image.onerror =
-        () => {
-
-            console.warn(
-                "Could not load album image for color extraction."
-            );
-        };
-
-
-    image.src =
-        url;
-}
-
-
-/* ==================================================
-   GET SERVER PLAYBACK
-================================================== */
-
-async function getSpotify() {
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/current?ts=" +
-                Date.now(),
-                {
-                    cache:
-                        "no-store"
-                }
-            );
-
-
-        if (
-            !response.ok
-        ) {
-            return null;
-        }
-
-
-        return await response.json();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Server playback request failed:",
-            error
-        );
-
-        return null;
-    }
-}
-
-
-/* ==================================================
-   GET LYRICS
-================================================== */
-
-async function getLyrics(
-    track
-) {
-
-    if (
-        !track
-    ) {
-        return;
-    }
-
-
-    if (
-        lyricsRequestTrack ===
-        track.id
-    ) {
-        return;
-    }
-
-
-    lyricsRequestTrack =
-        track.id;
-
-
-    loadingElement.style.display =
-        "block";
-
-    noLyricsElement.style.display =
-        "none";
-
-
-    lyricsElement.innerHTML =
-        "";
-
-    lineElements =
-        [];
-
-    currentLyrics =
-        [];
-
-
-    try {
-
-        const params =
-            new URLSearchParams({
-
-                id:
-                    track.id,
-
-                title:
-                    track.title,
-
-                artist:
-                    track.artist,
-
-                album:
-                    track.album || "",
-
-                duration:
-                    track.duration
-
-            });
-
-
-        const response =
-            await fetch(
-                "/api/lyrics?" +
-                params.toString(),
-                {
-                    cache:
-                        "no-store"
-                }
-            );
-
-
-        if (
-            !response.ok
-        ) {
-
-            throw new Error(
-                "Lyrics request failed"
-            );
-        }
-
-
-        const data =
-            await response.json();
-
-
-        loadingElement.style.display =
-            "none";
-
-
-        if (
-            data.syncedLyrics
-        ) {
-
-            currentLyrics =
-                parseSyncedLyrics(
-                    data.syncedLyrics
+                albumArtElement.classList.add(
+                    "loaded"
                 );
-        }
+            };
 
 
-        if (
-            currentLyrics.length === 0 &&
-            data.lyrics
-        ) {
+        albumArtElement.onerror =
+            () => {
 
-            currentLyrics =
-                parsePlainLyrics(
-                    data.lyrics
+                console.warn(
+                    "Album artwork could not be loaded:",
+                    url
                 );
-        }
+
+                albumArtElement.classList.remove(
+                    "loaded"
+                );
+            };
 
 
-        if (
-            currentLyrics.length === 0
-        ) {
-
-            noLyricsElement.style.display =
-                "block";
-
-            return;
-        }
+        const image =
+            new Image();
 
 
-        buildLyricRows();
+        image.crossOrigin =
+            "anonymous";
 
 
-        lastLyricIndex =
-            undefined;
+        image.onload =
+            () => {
+
+                updateAmbientFromImage(
+                    image
+                );
+            };
 
 
-        updateLyrics(
-            getEstimatedPosition()
-        );
+        image.onerror =
+            () => {
 
-    }
-
-    catch (error) {
-
-        console.error(
-            "Lyrics error:",
-            error
-        );
-
-        loadingElement.style.display =
-            "none";
-
-        noLyricsElement.style.display =
-            "block";
-    }
-}
+                console.warn(
+                    "Could not load album image for color extraction."
+                );
+            };
 
 
-/* ==================================================
-   PARSE SYNCED LYRICS
-================================================== */
-
-function parseSyncedLyrics(
-    text
-) {
-
-    const lines =
-        text.split(
-            /\r?\n/
-        );
-
-
-    const result =
-        [];
-
-
-    for (
-        const line of lines
-    ) {
-
-        const match =
-            line.match(
-                /^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$/
-            );
-
-
-        if (
-            !match
-        ) {
-            continue;
-        }
-
-
-        const minutes =
-            Number(
-                match[1]
-            );
-
-
-        const seconds =
-            Number(
-                match[2]
-            );
-
-
-        const timestamp =
-            (
-                minutes * 60 +
-                seconds
-            ) * 1000;
-
-
-        const lyric =
-            match[3].trim();
-
-
-        if (
-            !lyric
-        ) {
-            continue;
-        }
-
-
-        result.push({
-
-            time:
-                timestamp,
-
-            text:
-                lyric
-
-        });
+        image.src =
+            url;
     }
 
 
-    return result.sort(
-        (
-            a,
-            b
-        ) =>
-            a.time -
-            b.time
-    );
-}
+    /* ==================================================
+       GET SERVER PLAYBACK
+    ================================================== */
 
+    async function getSpotify() {
 
-/* ==================================================
-   PLAIN LYRICS
-================================================== */
+        try {
 
-function parsePlainLyrics(
-    text
-) {
-
-    const lines =
-        text.split(
-            /\r?\n/
-        );
-
-
-    return lines
-
-        .map(
-            (
-                line,
-                index
-            ) => ({
-
-                time:
-                    index * 4000,
-
-                text:
-                    line.trim()
-
-            })
-        )
-
-        .filter(
-            line =>
-                line.text.length > 0
-        );
-}
-
-
-/* ==================================================
-   CURRENT LYRIC
-================================================== */
-
-function getCurrentLyricIndex(
-    position
-) {
-
-    if (
-        currentLyrics.length === 0
-    ) {
-        return -1;
-    }
-
-
-    let currentIndex =
-        -1;
-
-
-    for (
-        let i = 0;
-        i < currentLyrics.length;
-        i++
-    ) {
-
-        if (
-            position >=
-            currentLyrics[i].time
-        ) {
-
-            currentIndex =
-                i;
-
-        }
-
-        else {
-            break;
-        }
-    }
-
-
-    return currentIndex;
-}
-
-
-/* ==================================================
-   LINE CLASSIFICATION
-================================================== */
-
-function classifyLine(
-    index,
-    currentIndex
-) {
-
-    const diff =
-        index -
-        currentIndex;
-
-
-    if (
-        diff === 0
-    ) {
-        return "current";
-    }
-
-
-    if (
-        diff === -1
-    ) {
-        return "prev-1";
-    }
-
-
-    if (
-        diff <= -2
-    ) {
-        return "prev-2";
-    }
-
-
-    if (
-        diff === 1
-    ) {
-        return "next-1";
-    }
-
-
-    return "next-2";
-}
-
-
-/* ==================================================
-   BUILD LYRIC ROWS
-================================================== */
-
-function buildLyricRows() {
-
-    lyricsElement.innerHTML =
-        "";
-
-
-    lineElements =
-        currentLyrics.map(
-            line => {
-
-                const element =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                element.className =
-                    "lyric-line";
-
-
-                [
-                    ...line.text
-                ].forEach(
-                    char => {
-
-                        const span =
-                            document.createElement(
-                                "span"
-                            );
-
-
-                        span.className =
-                            "wave-char";
-
-
-                        span.textContent =
-                            char === " "
-                                ? "\u00A0"
-                                : char;
-
-
-                        element.appendChild(
-                            span
-                        );
+            const response =
+                await fetch(
+                    "/api/current?ts=" +
+                    Date.now(),
+                    {
+                        cache:
+                            "no-store"
                     }
                 );
 
 
-                lyricsElement.appendChild(
-                    element
-                );
-
-
-                return element;
+            if (
+                !response.ok
+            ) {
+                return null;
             }
-        );
-}
 
 
-/* ==================================================
-   WAVE
-================================================== */
+            return await response.json();
 
-let waveToken =
-    0;
-
-
-function sleep(
-    milliseconds
-) {
-
-    return new Promise(
-        resolve =>
-            setTimeout(
-                resolve,
-                milliseconds
-            )
-    );
-}
-
-
-/* ==================================================
-   CHARACTER WAVE
-================================================== */
-
-async function runCharacterWave(
-    lyricElement,
-    letterDelay,
-    token
-) {
-
-    if (
-        !letterDelay
-    ) {
-
-        letterDelay =
-            WAVE_DELAY;
-    }
-
-
-    if (
-        !lyricElement
-    ) {
-        return;
-    }
-
-
-    if (
-        token !==
-        waveToken
-    ) {
-        return;
-    }
-
-
-    const characters =
-        lyricElement.querySelectorAll(
-            ".wave-char"
-        );
-
-
-    characters.forEach(
-        character => {
-
-            character.classList.remove(
-                "wave-active"
-            );
         }
-    );
+        catch (error) {
 
+            console.error(
+                "Server playback request failed:",
+                error
+            );
 
-    await sleep(
-        50
-    );
-
-
-    if (
-        token !==
-        waveToken
-    ) {
-        return;
+            return null;
+        }
     }
 
 
-    for (
-        let i = 0;
-        i < characters.length;
-        i++
-    ) {
+    /* ==================================================
+       GET LYRICS
+    ================================================== */
 
-        if (
-            token !==
-            waveToken
-        ) {
+    async function getLyrics(track) {
+
+        if (!track) {
             return;
         }
 
 
         if (
+            lyricsRequestTrack ===
+            track.id
+        ) {
+            return;
+        }
+
+
+        lyricsRequestTrack =
+            track.id;
+
+
+        const requestVersion =
+            ++lyricsRequestVersion;
+
+
+        loadingElement.style.display =
+            "block";
+
+        noLyricsElement.style.display =
+            "none";
+
+
+        lyricsElement.innerHTML =
+            "";
+
+        lineElements =
+            [];
+
+        currentLyrics =
+            [];
+
+
+        try {
+
+            const params =
+                new URLSearchParams({
+
+                    id:
+                        track.id,
+
+                    title:
+                        track.title,
+
+                    artist:
+                        track.artist,
+
+                    album:
+                        track.album || "",
+
+                    duration:
+                        track.duration
+                });
+
+
+            const response =
+                await fetch(
+                    "/api/lyrics?" +
+                    params.toString(),
+                    {
+                        cache:
+                            "no-store"
+                    }
+                );
+
+
+            if (
+                !response.ok
+            ) {
+                throw new Error(
+                    "Lyrics request failed"
+                );
+            }
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                requestVersion !==
+                    lyricsRequestVersion ||
+
+                currentTrackId !==
+                    track.id
+            ) {
+                return;
+            }
+
+
+            loadingElement.style.display =
+                "none";
+
+
+            if (
+                data.syncedLyrics
+            ) {
+
+                currentLyrics =
+                    parseSyncedLyrics(
+                        data.syncedLyrics
+                    );
+            }
+
+
+            if (
+                currentLyrics.length === 0 &&
+                data.lyrics
+            ) {
+
+                currentLyrics =
+                    parsePlainLyrics(
+                        data.lyrics
+                    );
+            }
+
+
+            if (
+                currentLyrics.length === 0
+            ) {
+
+                noLyricsElement.style.display =
+                    "block";
+
+                return;
+            }
+
+
+            buildLyricRows();
+
+
+            lastLyricIndex =
+                undefined;
+
+
+            updateLyrics(
+                getEstimatedPosition()
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                "Lyrics error:",
+                error
+            );
+
+            loadingElement.style.display =
+                "none";
+
+            noLyricsElement.style.display =
+                "block";
+        }
+    }
+
+
+    /* ==================================================
+       PARSE SYNCED LYRICS
+    ================================================== */
+
+    function parseSyncedLyrics(text) {
+
+        const lines =
+            text.split(
+                /\r?\n/
+            );
+
+
+        const result =
+            [];
+
+
+        for (
+            const line of lines
+        ) {
+
+            const match =
+                line.match(
+                    /^\[(\d+):(\d+(?:\.\d+)?)\]\s*(.*)$/
+                );
+
+
+            if (!match) {
+                continue;
+            }
+
+
+            const minutes =
+                Number(
+                    match[1]
+                );
+
+
+            const seconds =
+                Number(
+                    match[2]
+                );
+
+
+            const timestamp =
+                (
+                    minutes * 60 +
+                    seconds
+                ) * 1000;
+
+
+            const lyric =
+                match[3].trim();
+
+
+            if (!lyric) {
+                continue;
+            }
+
+
+            result.push({
+
+                time:
+                    timestamp,
+
+                text:
+                    lyric
+            });
+        }
+
+
+        return result.sort(
+            (
+                a,
+                b
+            ) =>
+                a.time -
+                b.time
+        );
+    }
+
+
+    /* ==================================================
+       PLAIN LYRICS
+    ================================================== */
+
+    function parsePlainLyrics(text) {
+
+        const lines =
+            text.split(
+                /\r?\n/
+            );
+
+
+        return lines
+
+            .map(
+                (
+                    line,
+                    index
+                ) => ({
+
+                    time:
+                        index * 4000,
+
+                    text:
+                        line.trim()
+                })
+            )
+
+            .filter(
+                line =>
+                    line.text.length > 0
+            );
+    }
+
+
+    /* ==================================================
+       CURRENT LYRIC
+    ================================================== */
+
+    function getCurrentLyricIndex(position) {
+
+        if (
+            currentLyrics.length === 0
+        ) {
+            return -1;
+        }
+
+
+        let currentIndex =
+            -1;
+
+
+        for (
+            let i = 0;
+            i < currentLyrics.length;
+            i++
+        ) {
+
+            if (
+                position >=
+                currentLyrics[i].time
+            ) {
+
+                currentIndex =
+                    i;
+
+            }
+            else {
+                break;
+            }
+        }
+
+
+        return currentIndex;
+    }
+
+
+    /* ==================================================
+       LINE CLASSIFICATION
+
+       ONLY:
+
+       current
+       next-1
+       next-2
+       hidden
+
+       There are NO previous lyric positions.
+    ================================================== */
+
+    function classifyLine(
+        index,
+        currentIndex
+    ) {
+
+        if (
+            index ===
+            currentIndex
+        ) {
+            return "current";
+        }
+
+
+        if (
+            index ===
+            currentIndex + 1
+        ) {
+            return "next-1";
+        }
+
+
+        if (
+            index ===
+            currentIndex + 2
+        ) {
+            return "next-2";
+        }
+
+
+        return "hidden";
+    }
+
+
+    /* ==================================================
+       SPLIT LYRIC INTO SENTENCES
+    ================================================== */
+
+    function splitIntoSentences(text) {
+
+        if (!text) {
+            return [];
+        }
+
+
+        const matches =
+            text.match(
+                /[^.!?]+[.!?]+|[^.!?]+$/g
+            );
+
+
+        if (!matches) {
+            return [
+                text.trim()
+            ];
+        }
+
+
+        return matches
+
+            .map(
+                sentence =>
+                    sentence.trim()
+            )
+
+            .filter(Boolean);
+    }
+
+
+    /* ==================================================
+       BUILD LYRIC ROWS
+    ================================================== */
+
+    function buildLyricRows() {
+
+        lyricsElement.innerHTML =
+            "";
+
+
+        lineElements =
+            currentLyrics.map(
+                line => {
+
+                    const element =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    element.className =
+                        "lyric-line hidden";
+
+
+                    const sentences =
+                        splitIntoSentences(
+                            line.text
+                        );
+
+
+                    sentences.forEach(
+                        (
+                            sentence,
+                            sentenceIndex
+                        ) => {
+
+                            const sentenceElement =
+                                document.createElement(
+                                    "span"
+                                );
+
+
+                            sentenceElement.className =
+                                "lyric-sentence";
+
+
+                            const words =
+                                sentence
+                                    .trim()
+                                    .split(/\s+/);
+
+
+                            words.forEach(
+                                (
+                                    word,
+                                    wordIndex
+                                ) => {
+
+                                    const span =
+                                        document.createElement(
+                                            "span"
+                                        );
+
+
+                                    span.className =
+                                        "lyric-word";
+
+
+                                    span.textContent =
+                                        word;
+
+
+                                    if (
+                                        wordIndex <
+                                        words.length - 1
+                                    ) {
+
+                                        span.textContent +=
+                                            " ";
+                                    }
+
+
+                                    sentenceElement.appendChild(
+                                        span
+                                    );
+                                }
+                            );
+
+
+                            element.appendChild(
+                                sentenceElement
+                            );
+
+
+                            if (
+                                sentenceIndex <
+                                sentences.length - 1
+                            ) {
+
+                                element.appendChild(
+                                    document.createTextNode(
+                                        " "
+                                    )
+                                );
+                            }
+                        }
+                    );
+
+
+                    lyricsElement.appendChild(
+                        element
+                    );
+
+
+                    return element;
+                }
+            );
+    }
+
+
+    /* ==================================================
+       RESET WORD STATES
+    ================================================== */
+
+    function resetWordStates() {
+
+        lineElements.forEach(
+            element => {
+
+                element
+                    .querySelectorAll(
+                        ".lyric-word"
+                    )
+                    .forEach(
+                        word => {
+
+                            word.classList.remove(
+                                "active"
+                            );
+                        }
+                    );
+            }
+        );
+    }
+
+
+    /* ==================================================
+       REVEAL ONE SENTENCE
+    ================================================== */
+
+    function revealSentence(
+        sentenceElement,
+        progress
+    ) {
+
+        const words =
+            sentenceElement.querySelectorAll(
+                ".lyric-word"
+            );
+
+
+        if (
+            words.length === 0
+        ) {
+            return;
+        }
+
+
+        const wordProgress =
+            progress *
+            words.length;
+
+
+        words.forEach(
+            (
+                word,
+                wordIndex
+            ) => {
+
+                const wordStart =
+                    wordIndex;
+
+
+                const wordAmount =
+                    Math.min(
+                        1,
+                        Math.max(
+                            0,
+                            wordProgress -
+                            wordStart
+                        )
+                    );
+
+
+                if (
+                    wordAmount >= 0.5
+                ) {
+
+                    word.classList.add(
+                        "active"
+                    );
+
+                }
+                else {
+
+                    word.classList.remove(
+                        "active"
+                    );
+                }
+            }
+        );
+    }
+
+
+    /* ==================================================
+       SMOOTH KARAOKE REVEAL
+    ================================================== */
+
+    function updateWordReveal(
+        element,
+        position,
+        index
+    ) {
+
+        if (
+            !element ||
+            !currentLyrics[index]
+        ) {
+            return;
+        }
+
+
+        const line =
+            currentLyrics[index];
+
+
+        const next =
+            currentLyrics[index + 1];
+
+
+        const start =
+            Number(
+                line.time
+            ) || 0;
+
+
+        const end =
+            next &&
+            Number.isFinite(
+                Number(
+                    next.time
+                )
+            ) &&
+            Number(
+                next.time
+            ) > start
+
+                ? Number(
+                    next.time
+                )
+
+                : start + 3000;
+
+
+        const duration =
+            Math.max(
+                700,
+                end - start
+            );
+
+
+        const elapsed =
+            Math.max(
+                0,
+                position -
+                start +
+                KARAOKE_LEAD
+            );
+
+
+        const progress =
+            Math.min(
+                1,
+                elapsed /
+                duration
+            );
+
+
+        const sentenceElements =
+            element.querySelectorAll(
+                ".lyric-sentence"
+            );
+
+
+        if (
+            sentenceElements.length === 0
+        ) {
+            return;
+        }
+
+
+        /* ==================================================
+           SINGLE SENTENCE
+        ================================================== */
+
+        if (
+            sentenceElements.length === 1
+        ) {
+
+            revealSentence(
+                sentenceElements[0],
+                progress
+            );
+
+            return;
+        }
+
+
+        /* ==================================================
+           MULTIPLE SENTENCES
+        ================================================== */
+
+        const sentenceCount =
+            sentenceElements.length;
+
+
+        const sentenceProgress =
+            progress *
+            sentenceCount;
+
+
+        sentenceElements.forEach(
+            (
+                sentence,
+                sentenceIndex
+            ) => {
+
+                const localProgress =
+                    Math.min(
+                        1,
+                        Math.max(
+                            0,
+                            sentenceProgress -
+                            sentenceIndex
+                        )
+                    );
+
+
+                revealSentence(
+                    sentence,
+                    localProgress
+                );
+            }
+        );
+    }
+
+
+    /* ==================================================
+       POSITION VISIBLE LYRICS
+
+       Instead of centering around a previous/current
+       stack, the current lyric starts at the main
+       visual position.
+
+       Next 1 and next 2 remain below it.
+
+       Previous lines are not part of the layout.
+    ================================================== */
+
+    function positionLyrics(
+        currentIndex
+    ) {
+
+        if (
+            currentIndex < 0 ||
+            lineElements.length === 0
+        ) {
+            return;
+        }
+
+
+        const viewport =
+            lyricsElement.parentElement;
+
+
+        const viewportHeight =
+            viewport.clientHeight;
+
+
+        /*
+           Put the CURRENT lyric around the upper-middle
+           portion of the viewport.
+
+           This leaves more room below it for:
+             next-1
+             next-2
+        */
+
+        const currentTop =
+            Math.max(
+                30,
+                viewportHeight * 0.12
+            );
+
+
+        /*
+           Since hidden previous lines use display:none,
+           we cannot rely on currentIndex * rowHeight.
+
+           Instead we calculate the height of the visible
+           stack directly.
+        */
+
+        let visibleHeight =
+            0;
+
+
+        for (
+            let i = currentIndex;
+            i <= currentIndex + 2 &&
+            i < lineElements.length;
+            i++
+        ) {
+
+            const element =
+                lineElements[i];
+
+
+            visibleHeight +=
+                element.offsetHeight;
+        }
+
+
+        /*
+           Current element begins at currentTop.
+        */
+
+        const currentElement =
+            lineElements[
+                currentIndex
+            ];
+
+
+        if (
+            currentElement
+        ) {
+
+            /*
+               Offset the complete lyrics container
+               so the current line begins at the
+               desired visual position.
+            */
+
+            const trackOffset =
+                currentTop -
+                currentElement.offsetTop;
+
+
+            lyricsElement.style.transform =
+                "translate3d(0, " +
+                trackOffset +
+                "px, 0)";
+        }
+    }
+
+
+    /* ==================================================
+       RENDER LYRICS
+    ================================================== */
+
+    function renderLyrics(
+        currentIndex
+    ) {
+
+        if (
+            lineElements.length === 0
+        ) {
+            return;
+        }
+
+
+        /*
+           Apply ONLY:
+
+           current
+           next-1
+           next-2
+           hidden
+        */
+
+        for (
+            let i = 0;
+            i < lineElements.length;
+            i++
+        ) {
+
+            const element =
+                lineElements[i];
+
+
+            const tier =
+                classifyLine(
+                    i,
+                    currentIndex
+                );
+
+
+            element.className =
+                "lyric-line " +
+                tier;
+        }
+
+
+        resetWordStates();
+
+
+        if (
+            currentIndex < 0
+        ) {
+            return;
+        }
+
+
+        /*
+           Wait one frame so the browser has applied
+           display:none/display:block before measuring
+           the current lyric position.
+        */
+
+        requestAnimationFrame(
+            () => {
+
+                positionLyrics(
+                    currentIndex
+                );
+
+            }
+        );
+
+
+        const currentElement =
+            lineElements[
+                currentIndex
+            ];
+
+
+        if (
+            currentElement &&
+            !harmonizing
+        ) {
+
+            updateWordReveal(
+                currentElement,
+                getPlaybackPosition(),
+                currentIndex
+            );
+        }
+    }
+
+
+    /* ==================================================
+       UPDATE LYRICS
+    ================================================== */
+
+    function updateLyrics(position) {
+
+        if (
+            currentLyrics.length === 0 ||
             harmonizing
         ) {
             return;
         }
 
 
-        const character =
-            characters[i];
+        const currentIndex =
+            getCurrentLyricIndex(
+                position
+            );
 
 
-        character.classList.remove(
-            "wave-active"
-        );
+        /*
+           Only rebuild the visual position
+           when the lyric actually changes.
+        */
+
+        if (
+            currentIndex !==
+            lastLyricIndex
+        ) {
+
+            lastLyricIndex =
+                currentIndex;
 
 
-        void character.offsetWidth;
-
-
-        character.classList.add(
-            "wave-active"
-        );
-
-
-        await sleep(
-            letterDelay
-        );
-    }
-
-
-    await sleep(
-        WAVE_DURATION
-    );
-
-
-    if (
-        token !==
-        waveToken
-    ) {
-        return;
-    }
-
-
-    await sleep(
-        WAVE_PAUSE
-    );
-
-
-    if (
-        token !==
-        waveToken
-    ) {
-        return;
-    }
-
-
-    runCharacterWave(
-        lyricElement,
-        letterDelay,
-        token
-    );
-}
-
-
-/* ==================================================
-   LINE DURATION
-================================================== */
-
-function getLineDuration(
-    index
-) {
-
-    const line =
-        currentLyrics[index];
-
-
-    const next =
-        currentLyrics[index + 1];
-
-
-    if (
-        !line ||
-        !next
-    ) {
-        return 3000;
-    }
-
-
-    const diff =
-        next.time -
-        line.time;
-
-
-    if (
-        diff <= 0
-    ) {
-        return 3000;
-    }
-
-
-    return Math.min(
-        Math.max(
-            diff,
-            800
-        ),
-        8000
-    );
-}
-
-
-/* ==================================================
-   WAVE DELAY
-================================================== */
-
-function getWaveDelayForLine(
-    text,
-    duration
-) {
-
-    const charCount =
-        [...text].length ||
-        1;
-
-
-    const available =
-        Math.max(
-            duration -
-            WAVE_DURATION -
-            200,
-            400
-        );
-
-
-    const delay =
-        available /
-        charCount;
-
-
-    return Math.min(
-        Math.max(
-            delay,
-            WAVE_DELAY_MIN
-        ),
-        WAVE_DELAY_MAX
-    );
-}
-
-
-/* ==================================================
-   RENDER LYRICS
-================================================== */
-
-function renderLyrics(
-    currentIndex
-) {
-
-    if (
-        lineElements.length === 0
-    ) {
-        return;
-    }
-
-
-    for (
-        let i = 0;
-        i < lineElements.length;
-        i++
-    ) {
-
-        const element =
-            lineElements[i];
-
-
-        const tier =
-            classifyLine(
-                i,
+            renderLyrics(
                 currentIndex
             );
+        }
 
 
-        element.className =
-            "lyric-line " +
-            tier;
-    }
+        /*
+           Word highlighting continues smoothly
+           between lyric changes.
+        */
+
+        const currentElement =
+            lineElements[
+                currentIndex
+            ];
 
 
-    if (
-        currentIndex < 0
-    ) {
-        return;
-    }
+        if (
+            currentElement &&
+            currentIndex >= 0 &&
+            !harmonizing
+        ) {
 
-
-    const viewport =
-        lyricsElement.parentElement;
-
-
-    const viewportHeight =
-        viewport.clientHeight;
-
-
-    const centerOffset =
-        (
-            viewportHeight / 2
-        ) -
-        (
-            ROW_HEIGHT / 2
-        );
-
-
-    const trackOffset =
-        centerOffset -
-        (
-            currentIndex *
-            ROW_HEIGHT
-        );
-
-
-    lyricsElement.style.transform =
-        "translate3d(0, " +
-        trackOffset +
-        "px, 0)";
-
-
-    const currentElement =
-        lineElements[
-            currentIndex
-        ];
-
-
-    if (
-        currentElement &&
-        !harmonizing
-    ) {
-
-        const duration =
-            getLineDuration(
+            updateWordReveal(
+                currentElement,
+                position,
                 currentIndex
             );
+        }
+    }
 
 
-        const letterDelay =
-            getWaveDelayForLine(
-                currentLyrics[
-                    currentIndex
-                ].text,
-                duration
+    /* ==================================================
+       AUTHORITATIVE LOCAL PLAYBACK CLOCK
+    ================================================== */
+
+    function getPlaybackPosition() {
+
+        if (
+            !lastServerSyncTime
+        ) {
+            return lastServerPosition;
+        }
+
+
+        if (
+            !isPlaybackActive
+        ) {
+            return lastServerPosition;
+        }
+
+
+        const elapsed =
+            Math.max(
+                0,
+                performance.now() -
+                lastServerSyncTime
             );
 
 
-        waveToken++;
-
-
-        runCharacterWave(
-            currentElement,
-            letterDelay,
-            waveToken
+        return (
+            lastServerPosition +
+            elapsed
         );
     }
-}
 
 
-/* ==================================================
-   UPDATE LYRICS
-================================================== */
+    function getEstimatedPosition() {
 
-function updateLyrics(
-    position
-) {
-
-    if (
-        currentLyrics.length === 0 ||
-        harmonizing
-    ) {
-        return;
+        return getPlaybackPosition();
     }
 
 
-    const currentIndex =
-        getCurrentLyricIndex(
-            position
-        );
+    /* ==================================================
+       HARMONIZE
+    ================================================== */
 
-
-    if (
-        currentIndex !==
-        lastLyricIndex
-    ) {
-
-        lastLyricIndex =
-            currentIndex;
-
-
-        renderLyrics(
-            currentIndex
-        );
-    }
-}
-
-
-/* ==================================================
-   ESTIMATED POSITION
-================================================== */
-
-function getEstimatedPosition() {
-
-    if (
-        !lastServerSyncTime
-    ) {
-        return lastServerPosition;
-    }
-
-
-    const elapsed =
-        performance.now() -
-        lastServerSyncTime;
-
-
-    return (
-        lastServerPosition +
-        elapsed
-    );
-}
-
-
-/* ==================================================
-   HARMONIZE
-================================================== */
-
-async function harmonize(
-    transition
-) {
-
-    harmonizing =
-        true;
-
-
-    waveToken++;
-
-
-    overlay.classList.add(
-        "harmonizing"
-    );
-
-
-    await sleep(
-        HARMONIZE_HIDE_TIME
-    );
-
-
-    if (
-        lastTransition ===
+    async function harmonize(
         transition
     ) {
 
         harmonizing =
-            false;
-
-
-        overlay.classList.remove(
-            "harmonizing"
-        );
-
-
-        lastLyricIndex =
-            undefined;
-
-
-        updateLyrics(
-            getEstimatedPosition()
-        );
-    }
-}
-
-
-/* ==================================================
-   UPDATE SPOTIFY
-================================================== */
-
-async function updateSpotify() {
-
-    const track =
-        await getSpotify();
-
-
-    if (
-        !track
-    ) {
-        return;
-    }
-
-
-    lastServerPosition =
-        Number(
-            track.position
-        ) || 0;
-
-
-    lastServerSyncTime =
-        performance.now();
-
-
-    /* ==========================================
-       STOPPED
-    ========================================== */
-
-    if (
-        !track.playing &&
-        !track.id
-    ) {
-
-        harmonizing =
-            false;
-
-
-        overlay.classList.remove(
-            "visible"
-        );
-
-
-        overlay.classList.remove(
-            "harmonizing"
-        );
-
-
-        setDefaultAmbient();
-
-
-        titleElement.textContent =
-            "Waiting for Spotify...";
-
-
-        albumArtElement.classList.remove(
-            "loaded"
-        );
-
-
-        albumArtElement.removeAttribute(
-            "src"
-        );
-
-
-        currentAlbumArt =
-            null;
-
-
-        return;
-    }
-
-
-    /* ==========================================
-       NEW TRACK
-    ========================================== */
-
-    if (
-        currentTrackId !==
-        track.id
-    ) {
-
-        console.log(
-            "New Spotify track:",
-            track.title,
-            "-",
-            track.artist
-        );
-
-
-        waveToken++;
-
-
-        harmonizing =
-            false;
-
-
-        overlay.classList.remove(
-            "harmonizing"
-        );
-
-
-        currentTrackId =
-            track.id;
-
-
-        lyricsRequestTrack =
-            null;
-
-
-        currentLyrics =
-            [];
-
-
-        lineElements =
-            [];
-
-
-        lastLyricIndex =
-            undefined;
-
-
-        lyricsElement.innerHTML =
-            "";
-
-
-        /* ======================================
-           TITLE
-        ====================================== */
-
-        titleElement.classList.remove(
-            "song-change"
-        );
-
-
-        void titleElement.offsetWidth;
-
-
-        titleElement.textContent =
-            track.title;
-
-
-        titleElement.classList.add(
-            "song-change"
-        );
-
-
-        /* ======================================
-           ALBUM ART
-        ====================================== */
-
-        loadAlbumArt(
-            track.albumArt
-        );
-
-
-        /* ======================================
-           LYRICS
-        ====================================== */
-
-        await getLyrics(
-            track
-        );
-    }
-
-
-    /* ==========================================
-       TRANSITION
-    ========================================== */
-
-    const transition =
-        track.transition;
-
-
-    if (
-        transition &&
-        transition !==
-        lastTransition
-    ) {
-
-        lastTransition =
-            transition;
-
-
-        if (
-            transition ===
-            "PAUSED"
-        ) {
-
-            harmonizing =
-                false;
-
-
-            waveToken++;
-
-
-            overlay.classList.remove(
-                "visible"
-            );
-
-
-            overlay.classList.remove(
-                "harmonizing"
-            );
-
-
-            return;
-        }
-
-
-        if (
-            transition ===
-            "RESUMED"
-        ) {
-
-            harmonizing =
-                false;
-
-
-            overlay.classList.add(
-                "visible"
-            );
-
-
-            lastLyricIndex =
-                undefined;
-
-
-            updateLyrics(
-                getEstimatedPosition()
-            );
-
-
-            return;
-        }
-
-
-        if (
-            transition ===
-            "FAST_FORWARD"
-        ) {
-
-            await harmonize(
-                "FAST_FORWARD"
-            );
-
-
-            return;
-        }
-
-
-        if (
-            transition ===
-            "REWIND"
-        ) {
-
-            await harmonize(
-                "REWIND"
-            );
-
-
-            return;
-        }
-
-
-        if (
-            transition ===
-            "TRACK_CHANGED"
-        ) {
-
-            harmonizing =
-                false;
-
-
-            overlay.classList.remove(
-                "harmonizing"
-            );
-
-
-            overlay.classList.add(
-                "visible"
-            );
-
-
-            lastLyricIndex =
-                undefined;
-
-
-            updateLyrics(
-                getEstimatedPosition()
-            );
-        }
-    }
-
-
-    /* ==========================================
-       NORMAL PLAYING
-    ========================================== */
-
-    if (
-        track.playing
-    ) {
-
-        harmonizing =
-            false;
-
-
-        overlay.classList.remove(
-            "harmonizing"
-        );
+            true;
 
 
         overlay.classList.add(
-            "visible"
+            "harmonizing"
         );
 
 
-        updateLyrics(
-            getEstimatedPosition()
+        await sleep(
+            HARMONIZE_HIDE_TIME
         );
 
 
-        return;
+        if (
+            lastTransition ===
+            transition
+        ) {
+
+            harmonizing =
+                false;
+
+
+            overlay.classList.remove(
+                "harmonizing"
+            );
+
+
+            lastLyricIndex =
+                undefined;
+
+
+            updateLyrics(
+                getEstimatedPosition()
+            );
+        }
     }
 
 
-    /* ==========================================
-       PAUSED
-    ========================================== */
+    /* ==================================================
+       SLEEP
+    ================================================== */
 
-    harmonizing =
+    function sleep(ms) {
+
+        return new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    ms
+                )
+        );
+    }
+
+
+    /* ==================================================
+       UPDATE SPOTIFY
+    ================================================== */
+
+    let spotifyUpdateRunning =
         false;
 
 
-    waveToken++;
+    async function updateSpotify() {
+
+        if (
+            spotifyUpdateRunning
+        ) {
+            return;
+        }
 
 
-    overlay.classList.remove(
-        "visible"
+        spotifyUpdateRunning =
+            true;
+
+
+        let track =
+            null;
+
+
+        try {
+
+            track =
+                await getSpotify();
+
+        }
+        finally {
+
+            spotifyUpdateRunning =
+                false;
+        }
+
+
+        if (!track) {
+            return;
+        }
+
+
+        /* ==================================================
+           AUTHORITATIVE SERVER SAMPLE
+        ================================================== */
+
+        const syncedPosition =
+            Number(
+                track.position
+            ) || 0;
+
+
+        const now =
+            performance.now();
+
+
+        if (
+            Number.isFinite(
+                Number(
+                    track.syncedAt
+                )
+            )
+        ) {
+
+            const sampleAge =
+                Math.max(
+                    0,
+                    Date.now() -
+                    Number(
+                        track.syncedAt
+                    )
+                );
+
+
+            lastServerPosition =
+                syncedPosition +
+                (
+                    track.playing
+                        ? sampleAge
+                        : 0
+                );
+
+        }
+        else {
+
+            lastServerPosition =
+                syncedPosition;
+        }
+
+
+        lastServerSyncTime =
+            now;
+
+
+        isPlaybackActive =
+            !!track.playing;
+
+
+        /* ==================================================
+           STOPPED
+        ================================================== */
+
+        if (
+            !track.playing &&
+            !track.id
+        ) {
+
+            isPlaybackActive =
+                false;
+
+
+            harmonizing =
+                false;
+
+
+            overlay.classList.remove(
+                "visible"
+            );
+
+            overlay.classList.remove(
+                "harmonizing"
+            );
+
+
+            setDefaultAmbient();
+
+
+            titleElement.textContent =
+                "Waiting for Spotify...";
+
+
+            albumArtElement.classList.remove(
+                "loaded"
+            );
+
+
+            albumArtElement.removeAttribute(
+                "src"
+            );
+
+
+            currentAlbumArt =
+                null;
+
+
+            return;
+        }
+
+
+        /* ==================================================
+           NEW TRACK
+        ================================================== */
+
+        if (
+            currentTrackId !==
+            track.id
+        ) {
+
+            console.log(
+                "New Spotify track:",
+                track.title,
+                "-",
+                track.artist
+            );
+
+
+            harmonizing =
+                false;
+
+
+            overlay.classList.remove(
+                "harmonizing"
+            );
+
+
+            currentTrackId =
+                track.id;
+
+
+            lyricsRequestTrack =
+                null;
+
+
+            lyricsRequestVersion++;
+
+
+            currentLyrics =
+                [];
+
+
+            lineElements =
+                [];
+
+
+            lastLyricIndex =
+                undefined;
+
+
+            lyricsElement.innerHTML =
+                "";
+
+
+            /* ==============================================
+               TITLE
+            ============================================== */
+
+            titleElement.classList.remove(
+                "song-change"
+            );
+
+
+            void titleElement.offsetWidth;
+
+
+            titleElement.textContent =
+                track.title;
+
+
+            titleElement.classList.add(
+                "song-change"
+            );
+
+
+            /* ==============================================
+               ALBUM ART
+            ============================================== */
+
+            loadAlbumArt(
+                track.albumArt
+            );
+
+
+            /* ==============================================
+               LYRICS
+            ============================================== */
+
+            await getLyrics(
+                track
+            );
+        }
+
+
+        /* ==================================================
+           TRANSITION
+        ================================================== */
+
+        const transition =
+            track.transition;
+
+
+        if (
+            transition &&
+            transition !==
+            lastTransition
+        ) {
+
+            lastTransition =
+                transition;
+
+
+            /* ==============================================
+               PAUSED
+            ============================================== */
+
+            if (
+                transition ===
+                "PAUSED"
+            ) {
+
+                isPlaybackActive =
+                    false;
+
+
+                harmonizing =
+                    false;
+
+
+                overlay.classList.remove(
+                    "visible"
+                );
+
+                overlay.classList.remove(
+                    "harmonizing"
+                );
+
+
+                return;
+            }
+
+
+            /* ==============================================
+               RESUMED
+            ============================================== */
+
+            if (
+                transition ===
+                "RESUMED"
+            ) {
+
+                isPlaybackActive =
+                    true;
+
+
+                harmonizing =
+                    false;
+
+
+                overlay.classList.add(
+                    "visible"
+                );
+
+
+                lastLyricIndex =
+                    undefined;
+
+
+                updateLyrics(
+                    getEstimatedPosition()
+                );
+
+
+                return;
+            }
+
+
+            /* ==============================================
+               FAST FORWARD
+            ============================================== */
+
+            if (
+                transition ===
+                "FAST_FORWARD"
+            ) {
+
+                await harmonize(
+                    "FAST_FORWARD"
+                );
+
+                return;
+            }
+
+
+            /* ==============================================
+               REWIND
+            ============================================== */
+
+            if (
+                transition ===
+                "REWIND"
+            ) {
+
+                await harmonize(
+                    "REWIND"
+                );
+
+                return;
+            }
+
+
+            /* ==============================================
+               TRACK CHANGED
+            ============================================== */
+
+            if (
+                transition ===
+                "TRACK_CHANGED"
+            ) {
+
+                isPlaybackActive =
+                    !!track.playing;
+
+
+                harmonizing =
+                    false;
+
+
+                overlay.classList.remove(
+                    "harmonizing"
+                );
+
+
+                overlay.classList.add(
+                    "visible"
+                );
+
+
+                lastLyricIndex =
+                    undefined;
+
+
+                updateLyrics(
+                    getEstimatedPosition()
+                );
+            }
+        }
+
+
+        /* ==================================================
+           NORMAL PLAYING
+        ================================================== */
+
+        if (
+            track.playing
+        ) {
+
+            isPlaybackActive =
+                true;
+
+
+            harmonizing =
+                false;
+
+
+            overlay.classList.remove(
+                "harmonizing"
+            );
+
+
+            overlay.classList.add(
+                "visible"
+            );
+
+
+            updateLyrics(
+                getEstimatedPosition()
+            );
+
+
+            return;
+        }
+
+
+        /* ==================================================
+           PAUSED
+        ================================================== */
+
+        isPlaybackActive =
+            false;
+
+
+        harmonizing =
+            false;
+
+
+        overlay.classList.remove(
+            "visible"
+        );
+
+        overlay.classList.remove(
+            "harmonizing"
+        );
+    }
+
+
+    /* ==================================================
+       INITIAL LOAD
+    ================================================== */
+
+    updateSpotify();
+
+
+    /* ==================================================
+       SERVER SYNC
+
+       Frontend synchronizes with backend every
+       2 seconds.
+
+       requestAnimationFrame handles interpolation.
+    ================================================== */
+
+    setInterval(
+        updateSpotify,
+        2000
     );
 
 
-    overlay.classList.remove(
-        "harmonizing"
-    );
-}
+    /* ==================================================
+       SMOOTH LYRIC CLOCK
+    ================================================== */
+
+    function smoothUpdate() {
+
+        if (
+            currentTrackId &&
+            currentLyrics.length > 0 &&
+            isPlaybackActive &&
+            !harmonizing
+        ) {
+
+            updateLyrics(
+                getEstimatedPosition()
+            );
+        }
 
 
-/* ==================================================
-   INITIAL LOAD
-================================================== */
-
-updateSpotify();
-
-
-/* ==================================================
-   SERVER SYNC
-================================================== */
-
-setInterval(
-    updateSpotify,
-    2000
-);
-
-
-/* ==================================================
-   SMOOTH LYRIC CLOCK
-================================================== */
-
-function smoothUpdate() {
-
-    if (
-        currentTrackId &&
-        currentLyrics.length > 0 &&
-        !harmonizing
-    ) {
-
-        updateLyrics(
-            getEstimatedPosition()
+        requestAnimationFrame(
+            smoothUpdate
         );
     }
 
@@ -3646,12 +4009,6 @@ function smoothUpdate() {
     requestAnimationFrame(
         smoothUpdate
     );
-}
-
-
-requestAnimationFrame(
-    smoothUpdate
-);
 
 </script>
 
